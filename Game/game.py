@@ -33,7 +33,7 @@ def setup():
 
 def main():
     setup()
-    print(board.grid[6][0].move((6, 0), (4, 0), board))
+    print(board.grid[1][0].move((1, 0), (3, 0), board))
     board.display()
 
 if __name__ == '__main__':

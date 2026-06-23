@@ -8,6 +8,7 @@ class Piece:
         self.name = name
         self.color = color
         self.icon = icon
+        self.history = []
 
     def __str__(self):
         return f"{self.color} {self.name}"
@@ -36,6 +37,7 @@ class Pawn(Piece):
                 elif((start_row == 1 and end_row == 3 and not board.piece_present(2, start_col)[0] and not board.piece_present(3, start_col)[0])
                     or start_row + 1 == end_row and not board.piece_present(end_row, end_col)[0] and InBounds(end_row, end_col)):
                         board.update(start_row, start_col, end_row, end_col)
+                        self.history.append((start_pos, end_pos))
                         return True
                 else:
                     return False
@@ -43,10 +45,12 @@ class Pawn(Piece):
                 if(InBounds(end_row, end_col) and start_row + 1 == end_row and abs(start_col - end_col) == 1 and board.piece_present(end_row, end_col)[0]):
                     capture(start_row, start_col, end_row, end_col)
                     board.update(start_row, start_col, end_row, end_col)
+                    self.history.append((start_pos, end_pos))
                     return True
                 elif(InBounds(end_row, end_col) and start_row + 1 == end_row and abs(start_col - end_col) == 1 and board.piece_present(end_row, end_col)[1] == "B"):
                     raise NotImplementedError("Pawn en passante not implemented yet.")
                     board.update(start_row, start_col, end_row, end_col)
+                    self.history.append((start_pos, end_pos))
                     return True
                 else:
                     return False
@@ -59,16 +63,19 @@ class Pawn(Piece):
                 elif((start_row == 6 and end_row == 4 and not board.piece_present(5, start_col)[0] and not board.piece_present(4, start_col)[0])
                     or start_row - 1 == end_row and not board.piece_present(end_row, end_col)[0] and InBounds(end_row, end_col)):
                         board.update(start_row, start_col, end_row, end_col)
+                        self.history.append((start_pos, end_pos))
                         return True
                 else:
                     return False
             else:
                 if(InBounds(end_row, end_col) and start_row - 1 == end_row and abs(start_col - end_col) == 1 and board.piece_present(end_row, end_col)[0]):
                     capture(start_row, start_col, end_row, end_col)
+                    self.history.append((start_pos, end_pos))
                     return True
                 elif(InBounds(end_row, end_col) and start_row - 1 == end_row and abs(start_col - end_col) == 1 and board.piece_present(end_row, end_col)[1] == "W"):
                     raise NotImplementedError("Pawn en passante not implemented yet.")
                     board.update(start_row, start_col, end_row, end_col)
+                    self.history.append((start_pos, end_pos))
                     return True
                 else:
                     return False
@@ -88,9 +95,11 @@ class Knight(Piece):
             or (abs(start_row - end_row) == 1 and abs(start_col - end_col) == 2)))):
                 if(board.piece_present(end_row, end_col)[1] != self.color):
                     capture(start_row, start_col, end_row, end_col)
+                    self.history.append((start_pos, end_pos))
                     return True
                 elif(board.piece_present(end_row, end_col)[0] == False):
                     board.update(start_row, start_col, end_row, end_col)
+                    self.history.append((start_pos, end_pos))
                     return True
                 else:
                     return False
@@ -114,9 +123,11 @@ class Bishop(Piece):
                     return False
             if(board.piece_present(end_row, end_col)[1] != self.color):
                 capture(start_row, start_col, end_row, end_col)
+                self.history.append((start_pos, end_pos))
                 return True
             elif(board.piece_present(end_row, end_col)[0] == False):
                 board.update(start_row, start_col, end_row, end_col)
+                self.history.append((start_pos, end_pos))
                 return True
             else:
                 return False
@@ -143,9 +154,11 @@ class Rook(Piece):
                         return False
             if(board.piece_present(end_row, end_col)[1] != self.color):
                 capture(start_row, start_col, end_row, end_col)
+                self.history.append((start_pos, end_pos))
                 return True
             elif(board.piece_present(end_row, end_col)[0] == False):
                 board.update(start_row, start_col, end_row, end_col)
+                self.history.append((start_pos, end_pos))
                 return True
             else:
                 return False
@@ -176,9 +189,11 @@ class Queen(Piece):
                         return False
             if(board.piece_present(end_row, end_col)[1] != self.color):
                 capture(start_row, start_col, end_row, end_col)
+                self.history.append((start_pos, end_pos))
                 return True
             elif(board.piece_present(end_row, end_col)[0] == False):
                 board.update(start_row, start_col, end_row, end_col)
+                self.history.append((start_pos, end_pos))
                 return True
             else:
                 return False
@@ -197,9 +212,11 @@ class King(Piece):
         if(inBounds(end_row, end_col) and (abs(start_row - end_row) <= 1 and abs(start_col - end_col) <= 1)):
             if(board.piece_present(end_row, end_col)[1] != self.color):
                 capture(start_row, start_col, end_row, end_col)
+                self.history.append((start_pos, end_pos))
                 return True
             elif(board.piece_present(end_row, end_col)[0] == False):
                 board.update(start_row, start_col, end_row, end_col)
+                self.history.append((start_pos, end_pos))
                 return True
             else:
                 return False

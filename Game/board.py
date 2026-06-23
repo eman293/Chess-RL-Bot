@@ -5,10 +5,9 @@ class Board:
         self.size = 8
         self.grid = [[' ' for _ in range(self.size)] for _ in range(self.size)]
 
-
     def display(self):
-        for row in self.grid:
-            print('|'.join(row.icon if row != ' ' else ' ' for row in row))
+        for i in range(len(self.grid) - 1, -1, -1):
+            print('|'.join(row.icon if row != ' ' else ' ' for row in self.grid[i]))
 
     #returns a tuple of {bool, string, string} = {isPresent, color, name}
     def piece_present(self, x, y):
