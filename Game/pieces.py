@@ -230,6 +230,7 @@ class King(Piece):
         end_row, end_col = end_pos
 
         #TODO Castling
+
         if(InBounds(end_row, end_col) and (abs(start_row - end_row) <= 1 and abs(start_col - end_col) <= 1)):
             if(board.piece_present(end_row, end_col)[1] != self.color):
                 board.capture(start_row, start_col, end_row, end_col)
