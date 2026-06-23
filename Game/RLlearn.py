@@ -1,6 +1,11 @@
 #Params to train on:
 #Move list - backprop on this
 #Predict best future piece moves
+
+#Policy iteration? - Use pieces values, potential piece positions, checks/checkmates/, some evaluation for position/future position with move
+#Greedy policy
+#Give a higher reward for wins over draws
+#https://arxiv.org/pdf/2409.06477
 import torch
 import torch.nn as nn
 import torch.optim as optim
