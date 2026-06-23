@@ -2,6 +2,7 @@ from pieces import *
 from board import *
 
 global board
+global piece_list
 
 def setup():
     global board
@@ -33,7 +34,19 @@ def setup():
 
 def main():
     setup()
+    piece_list = []
+    for row in board.grid:
+        for piece in row:
+            if piece != ' ':
+                piece_list.append(piece)
+
     print(board.grid[1][0].move((1, 0), (3, 0), board))
+    print(board.grid[6][1].move((6, 1), (4, 1), board))
+    print(board.grid[3][0].move((3, 0), (4, 1), board))
+    print(board.grid[7][1].move((7, 1), (5, 2), board))
+    print(board.grid[4][1].move((4, 1), (5, 1), board))
+    print(board.grid[5][1].move((5, 1), (6, 1), board))
+    print(board.grid[7][2].move((7, 2), (6, 1), board))
     board.display()
 
 if __name__ == '__main__':

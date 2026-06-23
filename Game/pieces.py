@@ -40,11 +40,11 @@ class Pawn(Piece):
                         self.history.append((start_pos, end_pos))
                         return True
                 else:
+                    raise RuntimeError("Invalid Move")
                     return False
             else:
                 if(InBounds(end_row, end_col) and start_row + 1 == end_row and abs(start_col - end_col) == 1 and board.piece_present(end_row, end_col)[0]):
-                    capture(start_row, start_col, end_row, end_col)
-                    board.update(start_row, start_col, end_row, end_col)
+                    board.capture(start_row, start_col, end_row, end_col)
                     self.history.append((start_pos, end_pos))
                     return True
                 elif(InBounds(end_row, end_col) and start_row + 1 == end_row and abs(start_col - end_col) == 1 and board.piece_present(end_row, end_col)[1] == "B"):
@@ -53,6 +53,7 @@ class Pawn(Piece):
                     self.history.append((start_pos, end_pos))
                     return True
                 else:
+                    raise RuntimeError("Invalid Move")
                     return False
         
         if self.color == "B":
@@ -66,10 +67,11 @@ class Pawn(Piece):
                         self.history.append((start_pos, end_pos))
                         return True
                 else:
+                    raise RuntimeError("Invalid Move")
                     return False
             else:
                 if(InBounds(end_row, end_col) and start_row - 1 == end_row and abs(start_col - end_col) == 1 and board.piece_present(end_row, end_col)[0]):
-                    capture(start_row, start_col, end_row, end_col)
+                    board.capture(start_row, start_col, end_row, end_col)
                     self.history.append((start_pos, end_pos))
                     return True
                 elif(InBounds(end_row, end_col) and start_row - 1 == end_row and abs(start_col - end_col) == 1 and board.piece_present(end_row, end_col)[1] == "W"):
@@ -78,6 +80,7 @@ class Pawn(Piece):
                     self.history.append((start_pos, end_pos))
                     return True
                 else:
+                    raise RuntimeError("Invalid Move")
                     return False
 
 class Knight(Piece):
@@ -91,19 +94,21 @@ class Knight(Piece):
         start_row, start_col = start_pos
         end_row, end_col = end_pos
 
-        if((inBounds(end_row, end_col) and ((abs(start_row - end_row) == 2 and abs(start_col - end_col) == 1) 
+        if((InBounds(end_row, end_col) and ((abs(start_row - end_row) == 2 and abs(start_col - end_col) == 1) 
             or (abs(start_row - end_row) == 1 and abs(start_col - end_col) == 2)))):
-                if(board.piece_present(end_row, end_col)[1] != self.color):
-                    capture(start_row, start_col, end_row, end_col)
-                    self.history.append((start_pos, end_pos))
-                    return True
-                elif(board.piece_present(end_row, end_col)[0] == False):
+                if(board.piece_present(end_row, end_col)[0] == False):
                     board.update(start_row, start_col, end_row, end_col)
                     self.history.append((start_pos, end_pos))
                     return True
+                elif(board.piece_present(end_row, end_col)[1] != self.color):
+                    board.capture(start_row, start_col, end_row, end_col)
+                    self.history.append((start_pos, end_pos))
+                    return True
                 else:
+                    raise RuntimeError("Invalid Move")
                     return False
         else:
+            raise RuntimeError("Invalid Move")
             return False
 
 class Bishop(Piece):
@@ -117,12 +122,13 @@ class Bishop(Piece):
         start_row, start_col = start_pos
         end_row, end_col = end_pos
 
-        if(inBounds(end_row, end_col) and abs(start_row - end_row) == abs(start_col - end_col)):
+        if(InBounds(end_row, end_col) and abs(start_row - end_row) == abs(start_col - end_col)):
             for i in range(1, abs(start_row - end_row)):
                 if(board.piece_present(start_row + (i * (1 if end_row > start_row else -1)), start_col + (i * (1 if end_col > start_col else -1)))[0]):
+                    raise RuntimeError("Invalid Move")
                     return False
             if(board.piece_present(end_row, end_col)[1] != self.color):
-                capture(start_row, start_col, end_row, end_col)
+                board.capture(start_row, start_col, end_row, end_col)
                 self.history.append((start_pos, end_pos))
                 return True
             elif(board.piece_present(end_row, end_col)[0] == False):
@@ -130,6 +136,7 @@ class Bishop(Piece):
                 self.history.append((start_pos, end_pos))
                 return True
             else:
+                raise RuntimeError("Invalid Move")
                 return False
 
 class Rook(Piece):
@@ -143,17 +150,19 @@ class Rook(Piece):
         start_row, start_col = start_pos
         end_row, end_col = end_pos
 
-        if(inBounds(end_row, end_col) and (start_row == end_row or start_col == end_col)):
+        if(InBounds(end_row, end_col) and (start_row == end_row or start_col == end_col)):
             if(start_row == end_row):
                 for i in range(1, abs(start_col - end_col)):
                     if(board.piece_present(start_row, start_col + (i * (1 if end_col > start_col else -1)))[0]):
+                        raise RuntimeError("Invalid Move")
                         return False
             else:
                 for i in range(1, abs(start_row - end_row)) :
                     if(board.piece_present(start_row + (i * (1 if end_row > start_row else -1)), start_col)[0]):
+                        raise RuntimeError("Invalid Move")
                         return False
             if(board.piece_present(end_row, end_col)[1] != self.color):
-                capture(start_row, start_col, end_row, end_col)
+                board.capture(start_row, start_col, end_row, end_col)
                 self.history.append((start_pos, end_pos))
                 return True
             elif(board.piece_present(end_row, end_col)[0] == False):
@@ -161,6 +170,7 @@ class Rook(Piece):
                 self.history.append((start_pos, end_pos))
                 return True
             else:
+                raise RuntimeError("Invalid Move")
                 return False
 
 class Queen(Piece):
@@ -174,21 +184,24 @@ class Queen(Piece):
         start_row, start_col = start_pos
         end_row, end_col = end_pos
 
-        if(inBounds(end_row, end_col) and (start_row == end_row or start_col == end_col or abs(start_row - end_row) == abs(start_col - end_col))):
+        if(InBounds(end_row, end_col) and (start_row == end_row or start_col == end_col or abs(start_row - end_row) == abs(start_col - end_col))):
             if(start_row == end_row):
                 for i in range(1, abs(start_col - end_col)):
                     if(board.piece_present(start_row, start_col + (i * (1 if end_col > start_col else -1)))[0]):
+                        raise RuntimeError("Invalid Move")
                         return False
             elif(start_col == end_col):
                 for i in range(1, abs(start_row - end_row)):
                     if(board.piece_present(start_row + (i * (1 if end_row > start_row else -1)), start_col)[0]):
+                        raise RuntimeError("Invalid Move")
                         return False
             else:
                 for i in range(1, abs(start_row - end_row)):
                     if(board.piece_present(start_row + (i * (1 if end_row > start_row else -1)), start_col + (i * (1 if end_col > start_col else -1)))[0]):
+                        raise RuntimeError("Invalid Move")
                         return False
             if(board.piece_present(end_row, end_col)[1] != self.color):
-                capture(start_row, start_col, end_row, end_col)
+                board.capture(start_row, start_col, end_row, end_col)
                 self.history.append((start_pos, end_pos))
                 return True
             elif(board.piece_present(end_row, end_col)[0] == False):
@@ -196,6 +209,7 @@ class Queen(Piece):
                 self.history.append((start_pos, end_pos))
                 return True
             else:
+                raise RuntimeError("Invalid Move")
                 return False
 
 class King(Piece):
@@ -209,9 +223,10 @@ class King(Piece):
         start_row, start_col = start_pos
         end_row, end_col = end_pos
 
-        if(inBounds(end_row, end_col) and (abs(start_row - end_row) <= 1 and abs(start_col - end_col) <= 1)):
+        #TODO Castling
+        if(InBounds(end_row, end_col) and (abs(start_row - end_row) <= 1 and abs(start_col - end_col) <= 1)):
             if(board.piece_present(end_row, end_col)[1] != self.color):
-                capture(start_row, start_col, end_row, end_col)
+                board.capture(start_row, start_col, end_row, end_col)
                 self.history.append((start_pos, end_pos))
                 return True
             elif(board.piece_present(end_row, end_col)[0] == False):
@@ -219,5 +234,6 @@ class King(Piece):
                 self.history.append((start_pos, end_pos))
                 return True
             else:
+                raise RuntimeError("Invalid Move")
                 return False
         
