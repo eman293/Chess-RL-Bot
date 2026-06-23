@@ -34,5 +34,11 @@ class Board:
             self.grid[x1][y1] = ' '
         else:
             raise IndexError("Position out of bounds.")
+    
+    def promote(self, x, y, new_piece):
+        if pieces.InBounds(x, y):
+            self.grid[x][y] = new_piece
+        else:
+            raise IndexError("Position out of bounds.")
 
 

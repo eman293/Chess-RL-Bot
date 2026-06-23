@@ -25,7 +25,6 @@ class Pawn(Piece):
             super().__init__("Pawn", color, chr(0x265F))
 
     def move(self, start_pos, end_pos, board):
-        print(self.__str__() + " moving from " + str(start_pos) + " to " + str(end_pos))
         start_row, start_col = start_pos
         end_row, end_col = end_pos
 
@@ -33,7 +32,11 @@ class Pawn(Piece):
             if(start_col == end_col):
                 if(end_row == 7):
                     #TODO HANDLE PROMOTION
-                    raise NotImplementedError("Pawn promotion not implemented yet.")
+                    # raise NotImplementedError("Pawn promotion not implemented yet.")
+                    board.update(start_row, start_col, end_row, end_col)
+                    q = Queen(self.color)
+                    board.promote(end_row, end_col, q)
+                    return q
                 elif((start_row == 1 and end_row == 3 and not board.piece_present(2, start_col)[0] and not board.piece_present(3, start_col)[0])
                     or start_row + 1 == end_row and not board.piece_present(end_row, end_col)[0] and InBounds(end_row, end_col)):
                         board.update(start_row, start_col, end_row, end_col)
@@ -60,7 +63,10 @@ class Pawn(Piece):
             if(start_col == end_col):
                 if(end_row == 0):
                     #TODO HANDLE PROMOTION
-                    raise NotImplementedError("Pawn promotion not implemented yet.")
+                    board.update(start_row, start_col, end_row, end_col)
+                    q = Queen(self.color)
+                    board.promote(end_row, end_col, q)
+                    return q
                 elif((start_row == 6 and end_row == 4 and not board.piece_present(5, start_col)[0] and not board.piece_present(4, start_col)[0])
                     or start_row - 1 == end_row and not board.piece_present(end_row, end_col)[0] and InBounds(end_row, end_col)):
                         board.update(start_row, start_col, end_row, end_col)
