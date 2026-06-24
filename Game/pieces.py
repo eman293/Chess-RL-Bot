@@ -1,5 +1,3 @@
-from board import *
-
 def InBounds(x1, y1):
     return (0 <= x1 < 8) and (0 <= y1 < 8)
 
@@ -14,89 +12,116 @@ class Piece:
         return f"{self.color} {self.name}"
 
     #start_pos and end_pos are tuples of (row, col)
-    def move(self, start_pos, end_pos, board):
+    def move(self, start_pos, end_pos, board, last_move=None):
         pass
 
 class Pawn(Piece):
     def __init__(self, color):
-        if(color == 'B'):
-            super().__init__("Pawn", color, chr(0x2659))
+        if color == 'W':
+            super().__init__("Pawn", color, chr(0x2659))  # ♙ outline = white
         else:
-            super().__init__("Pawn", color, chr(0x265F))
+            super().__init__("Pawn", color, chr(0x265F))  # ♟ filled = black
 
-    def move(self, start_pos, end_pos, board):
+    def move(self, start_pos, end_pos, board, last_move=None):
         start_row, start_col = start_pos
         end_row, end_col = end_pos
 
         if self.color == "W":
-            if(start_col == end_col):
-                if(end_row == 7):
-                    #TODO HANDLE PROMOTION
-                    # raise NotImplementedError("Pawn promotion not implemented yet.")
+            if start_col == end_col:
+                if end_row == 7:
                     board.update(start_row, start_col, end_row, end_col)
-                    q = Queen(self.color)
-                    board.promote(end_row, end_col, q)
-                    return q
-                elif((start_row == 1 and end_row == 3 and not board.piece_present(2, start_col)[0] and not board.piece_present(3, start_col)[0])
-                    or start_row + 1 == end_row and not board.piece_present(end_row, end_col)[0] and InBounds(end_row, end_col)):
-                        board.update(start_row, start_col, end_row, end_col)
+                    self.history.append((start_pos, end_pos))
+                    return 'promotion'
+                elif ((start_row == 1 and end_row == 3
+                       and not board.piece_present(2, start_col)[0]
+                       and not board.piece_present(3, start_col)[0])
+                      or (start_row + 1 == end_row
+                          and not board.piece_present(end_row, end_col)[0]
+                          and InBounds(end_row, end_col))):
+                    board.update(start_row, start_col, end_row, end_col)
+                    self.history.append((start_pos, end_pos))
+                    return True
+                else:
+                    raise RuntimeError("Invalid Move")
+            else:
+                if (InBounds(end_row, end_col)
+                        and start_row + 1 == end_row
+                        and abs(start_col - end_col) == 1):
+                    # Normal capture
+                    if board.piece_present(end_row, end_col)[0]:
+                        board.capture(start_row, start_col, end_row, end_col)
                         self.history.append((start_pos, end_pos))
                         return True
+                    # En passant
+                    elif (last_move is not None):
+                        lm_piece, lm_start, lm_end = last_move
+                        lm_start_row, lm_start_col = lm_start
+                        lm_end_row, lm_end_col = lm_end
+                        if (isinstance(lm_piece, Pawn)
+                                and lm_piece.color == "B"
+                                and lm_start_row == 6 and lm_end_row == 4
+                                and lm_end_col == end_col
+                                and lm_end_row == start_row):
+                            board.grid[start_row][end_col] = ' '  # remove captured pawn
+                            board.update(start_row, start_col, end_row, end_col)
+                            self.history.append((start_pos, end_pos))
+                            return True
+                    raise RuntimeError("Invalid Move")
                 else:
                     raise RuntimeError("Invalid Move")
-                    return False
-            else:
-                if(InBounds(end_row, end_col) and start_row + 1 == end_row and abs(start_col - end_col) == 1 and board.piece_present(end_row, end_col)[0]):
-                    board.capture(start_row, start_col, end_row, end_col)
-                    self.history.append((start_pos, end_pos))
-                    return True
-                elif(InBounds(end_row, end_col) and start_row + 1 == end_row and abs(start_col - end_col) == 1 and board.piece_present(end_row, end_col)[1] == "B"):
-                    raise NotImplementedError("Pawn en passante not implemented yet.")
-                    board.update(start_row, start_col, end_row, end_col)
-                    self.history.append((start_pos, end_pos))
-                    return True
-                else:
-                    raise RuntimeError("Invalid Move")
-                    return False
-        
+
         if self.color == "B":
-            if(start_col == end_col):
-                if(end_row == 0):
-                    #TODO HANDLE PROMOTION
+            if start_col == end_col:
+                if end_row == 0:
                     board.update(start_row, start_col, end_row, end_col)
-                    q = Queen(self.color)
-                    board.promote(end_row, end_col, q)
-                    return q
-                elif((start_row == 6 and end_row == 4 and not board.piece_present(5, start_col)[0] and not board.piece_present(4, start_col)[0])
-                    or start_row - 1 == end_row and not board.piece_present(end_row, end_col)[0] and InBounds(end_row, end_col)):
-                        board.update(start_row, start_col, end_row, end_col)
+                    self.history.append((start_pos, end_pos))
+                    return 'promotion'
+                elif ((start_row == 6 and end_row == 4
+                       and not board.piece_present(5, start_col)[0]
+                       and not board.piece_present(4, start_col)[0])
+                      or (start_row - 1 == end_row
+                          and not board.piece_present(end_row, end_col)[0]
+                          and InBounds(end_row, end_col))):
+                    board.update(start_row, start_col, end_row, end_col)
+                    self.history.append((start_pos, end_pos))
+                    return True
+                else:
+                    raise RuntimeError("Invalid Move")
+            else:
+                if (InBounds(end_row, end_col)
+                        and start_row - 1 == end_row
+                        and abs(start_col - end_col) == 1):
+                    # Normal capture
+                    if board.piece_present(end_row, end_col)[0]:
+                        board.capture(start_row, start_col, end_row, end_col)
                         self.history.append((start_pos, end_pos))
                         return True
+                    # En passant
+                    elif (last_move is not None):
+                        lm_piece, lm_start, lm_end = last_move
+                        lm_start_row, lm_start_col = lm_start
+                        lm_end_row, lm_end_col = lm_end
+                        if (isinstance(lm_piece, Pawn)
+                                and lm_piece.color == "W"
+                                and lm_start_row == 1 and lm_end_row == 3
+                                and lm_end_col == end_col
+                                and lm_end_row == start_row):
+                            board.grid[start_row][end_col] = ' '  # remove captured pawn
+                            board.update(start_row, start_col, end_row, end_col)
+                            self.history.append((start_pos, end_pos))
+                            return True
+                    raise RuntimeError("Invalid Move")
                 else:
                     raise RuntimeError("Invalid Move")
-                    return False
-            else:
-                if(InBounds(end_row, end_col) and start_row - 1 == end_row and abs(start_col - end_col) == 1 and board.piece_present(end_row, end_col)[0]):
-                    board.capture(start_row, start_col, end_row, end_col)
-                    self.history.append((start_pos, end_pos))
-                    return True
-                elif(InBounds(end_row, end_col) and start_row - 1 == end_row and abs(start_col - end_col) == 1 and board.piece_present(end_row, end_col)[1] == "W"):
-                    raise NotImplementedError("Pawn en passante not implemented yet.")
-                    board.update(start_row, start_col, end_row, end_col)
-                    self.history.append((start_pos, end_pos))
-                    return True
-                else:
-                    raise RuntimeError("Invalid Move")
-                    return False
 
 class Knight(Piece):
     def __init__(self, color):
-        if(color == 'B'):
-            super().__init__("Knight", color, chr(0x2658))
+        if color == 'W':
+            super().__init__("Knight", color, chr(0x2658))  # ♘ outline = white
         else:
-            super().__init__("Knight", color, chr(0x265E))
+            super().__init__("Knight", color, chr(0x265E))  # ♞ filled = black
 
-    def move(self, start_pos, end_pos, board):
+    def move(self, start_pos, end_pos, board, last_move=None):
         start_row, start_col = start_pos
         end_row, end_col = end_pos
 
@@ -117,130 +142,174 @@ class Knight(Piece):
             raise RuntimeError("Invalid Move")
             return False
 
-class Bishop(Piece):
-    def __init__(self, color):
-        if(color == 'B'):
-            super().__init__("Bishop", color, chr(0x2657))
-        else:
-            super().__init__("Bishop", color, chr(0x265D))
-
-    def move(self, start_pos, end_pos, board):
-        start_row, start_col = start_pos
-        end_row, end_col = end_pos
-
-        if(InBounds(end_row, end_col) and abs(start_row - end_row) == abs(start_col - end_col)):
-            for i in range(1, abs(start_row - end_row)):
-                if(board.piece_present(start_row + (i * (1 if end_row > start_row else -1)), start_col + (i * (1 if end_col > start_col else -1)))[0]):
-                    raise RuntimeError("Invalid Move")
-                    return False
-            if(board.piece_present(end_row, end_col)[1] != self.color):
-                board.capture(start_row, start_col, end_row, end_col)
-                self.history.append((start_pos, end_pos))
-                return True
-            elif(board.piece_present(end_row, end_col)[0] == False):
-                board.update(start_row, start_col, end_row, end_col)
-                self.history.append((start_pos, end_pos))
-                return True
-            else:
-                raise RuntimeError("Invalid Move")
-                return False
-
 class Rook(Piece):
     def __init__(self, color):
-        if(color == 'B'):
-            super().__init__("Rook", color, chr(0x2656))
+        if color == 'W':
+            super().__init__("Rook", color, chr(0x2656))  # ♖ outline = white
         else:
-            super().__init__("Rook", color, chr(0x265C))
+            super().__init__("Rook", color, chr(0x265C))  # ♜ filled = black
 
-    def move(self, start_pos, end_pos, board):
+    def move(self, start_pos, end_pos, board, last_move=None):
         start_row, start_col = start_pos
         end_row, end_col = end_pos
 
-        if(InBounds(end_row, end_col) and (start_row == end_row or start_col == end_col)):
-            if(start_row == end_row):
-                for i in range(1, abs(start_col - end_col)):
-                    if(board.piece_present(start_row, start_col + (i * (1 if end_col > start_col else -1)))[0]):
-                        raise RuntimeError("Invalid Move")
-                        return False
-            else:
-                for i in range(1, abs(start_row - end_row)) :
-                    if(board.piece_present(start_row + (i * (1 if end_row > start_row else -1)), start_col)[0]):
-                        raise RuntimeError("Invalid Move")
-                        return False
-            if(board.piece_present(end_row, end_col)[1] != self.color):
-                board.capture(start_row, start_col, end_row, end_col)
-                self.history.append((start_pos, end_pos))
-                return True
-            elif(board.piece_present(end_row, end_col)[0] == False):
-                board.update(start_row, start_col, end_row, end_col)
-                self.history.append((start_pos, end_pos))
-                return True
-            else:
+        if not (InBounds(end_row, end_col) and (start_row == end_row or start_col == end_col)):
+            raise RuntimeError("Invalid Move")
+
+        if start_row == end_row:
+            for i in range(1, abs(start_col - end_col)):
+                if board.piece_present(start_row, start_col + (i * (1 if end_col > start_col else -1)))[0]:
+                    raise RuntimeError("Invalid Move")
+        else:
+            for i in range(1, abs(start_row - end_row)):
+                if board.piece_present(start_row + (i * (1 if end_row > start_row else -1)), start_col)[0]:
+                    raise RuntimeError("Invalid Move")
+
+        if board.piece_present(end_row, end_col)[0] == False:
+            board.update(start_row, start_col, end_row, end_col)
+            self.history.append((start_pos, end_pos))
+            return True
+        elif board.piece_present(end_row, end_col)[1] != self.color:
+            board.capture(start_row, start_col, end_row, end_col)
+            self.history.append((start_pos, end_pos))
+            return True
+        else:
+            raise RuntimeError("Invalid Move")
+
+class Bishop(Piece):
+    def __init__(self, color):
+        if color == 'W':
+            super().__init__("Bishop", color, chr(0x2657))  # ♗ outline = white
+        else:
+            super().__init__("Bishop", color, chr(0x265D))  # ♝ filled = black
+
+    def move(self, start_pos, end_pos, board, last_move=None):
+        start_row, start_col = start_pos
+        end_row, end_col = end_pos
+
+        if not (InBounds(end_row, end_col) and abs(start_row - end_row) == abs(start_col - end_col) and abs(start_row - end_row) > 0):
+            raise RuntimeError("Invalid Move")
+
+        for i in range(1, abs(start_row - end_row)):
+            if board.piece_present(
+                start_row + (i * (1 if end_row > start_row else -1)),
+                start_col + (i * (1 if end_col > start_col else -1))
+            )[0]:
                 raise RuntimeError("Invalid Move")
-                return False
+
+        if board.piece_present(end_row, end_col)[0] == False:
+            board.update(start_row, start_col, end_row, end_col)
+            self.history.append((start_pos, end_pos))
+            return True
+        elif board.piece_present(end_row, end_col)[1] != self.color:
+            board.capture(start_row, start_col, end_row, end_col)
+            self.history.append((start_pos, end_pos))
+            return True
+        else:
+            raise RuntimeError("Invalid Move")
+
+
 
 class Queen(Piece):
     def __init__(self, color):
-        if(color == 'B'):
-            super().__init__("Queen", color, chr(0x2655))
+        if color == 'W':
+            super().__init__("Queen", color, chr(0x2655))  # ♕ outline = white
         else:
-            super().__init__("Queen", color, chr(0x265B))
+            super().__init__("Queen", color, chr(0x265B))  # ♛ filled = black
 
-    def move(self, start_pos, end_pos, board):
+    def move(self, start_pos, end_pos, board, last_move=None):
         start_row, start_col = start_pos
         end_row, end_col = end_pos
 
-        if(InBounds(end_row, end_col) and (start_row == end_row or start_col == end_col or abs(start_row - end_row) == abs(start_col - end_col))):
-            if(start_row == end_row):
-                for i in range(1, abs(start_col - end_col)):
-                    if(board.piece_present(start_row, start_col + (i * (1 if end_col > start_col else -1)))[0]):
-                        raise RuntimeError("Invalid Move")
-                        return False
-            elif(start_col == end_col):
-                for i in range(1, abs(start_row - end_row)):
-                    if(board.piece_present(start_row + (i * (1 if end_row > start_row else -1)), start_col)[0]):
-                        raise RuntimeError("Invalid Move")
-                        return False
-            else:
-                for i in range(1, abs(start_row - end_row)):
-                    if(board.piece_present(start_row + (i * (1 if end_row > start_row else -1)), start_col + (i * (1 if end_col > start_col else -1)))[0]):
-                        raise RuntimeError("Invalid Move")
-                        return False
-            if(board.piece_present(end_row, end_col)[1] != self.color):
-                board.capture(start_row, start_col, end_row, end_col)
-                self.history.append((start_pos, end_pos))
-                return True
-            elif(board.piece_present(end_row, end_col)[0] == False):
-                board.update(start_row, start_col, end_row, end_col)
-                self.history.append((start_pos, end_pos))
-                return True
-            else:
-                raise RuntimeError("Invalid Move")
-                return False
+        if not (InBounds(end_row, end_col) and (start_row == end_row or start_col == end_col or abs(start_row - end_row) == abs(start_col - end_col))):
+            raise RuntimeError("Invalid Move")
+
+        if start_row == end_row:
+            for i in range(1, abs(start_col - end_col)):
+                if board.piece_present(start_row, start_col + (i * (1 if end_col > start_col else -1)))[0]:
+                    raise RuntimeError("Invalid Move")
+        elif start_col == end_col:
+            for i in range(1, abs(start_row - end_row)):
+                if board.piece_present(start_row + (i * (1 if end_row > start_row else -1)), start_col)[0]:
+                    raise RuntimeError("Invalid Move")
+        else:
+            for i in range(1, abs(start_row - end_row)):
+                if board.piece_present(
+                    start_row + (i * (1 if end_row > start_row else -1)),
+                    start_col + (i * (1 if end_col > start_col else -1))
+                )[0]:
+                    raise RuntimeError("Invalid Move")
+
+        if board.piece_present(end_row, end_col)[0] == False:
+            board.update(start_row, start_col, end_row, end_col)
+            self.history.append((start_pos, end_pos))
+            return True
+        elif board.piece_present(end_row, end_col)[1] != self.color:
+            board.capture(start_row, start_col, end_row, end_col)
+            self.history.append((start_pos, end_pos))
+            return True
+        else:
+            raise RuntimeError("Invalid Move")
 
 class King(Piece):
     def __init__(self, color):
-        if(color == 'B'):
-            super().__init__("King", color, chr(0x2654))
+        if color == 'W':
+            super().__init__("King", color, chr(0x2654))  # ♔ outline = white
         else:
-            super().__init__("King", color, chr(0x265A))
+            super().__init__("King", color, chr(0x265A))  # ♚ filled = black
 
-    def move(self, start_pos, end_pos, board):
+    def move(self, start_pos, end_pos, board, last_move=None):
         start_row, start_col = start_pos
         end_row, end_col = end_pos
 
-        #TODO Castling
+        # Castling
+        if (start_col == 4 and end_col in (2, 6)
+                and start_row == end_row
+                and len(self.history) == 0):  # king has not moved
 
-        if(InBounds(end_row, end_col) and (abs(start_row - end_row) <= 1 and abs(start_col - end_col) <= 1)):
-            if(board.piece_present(end_row, end_col)[1] != self.color):
-                board.capture(start_row, start_col, end_row, end_col)
+            row = start_row
+
+            if end_col == 6:  # Kingside
+                rook = board.grid[row][7]
+                if (rook != ' ' and rook.name == 'Rook'
+                        and len(rook.history) == 0
+                        and not board.piece_present(row, 5)[0]
+                        and not board.piece_present(row, 6)[0]):
+                    board.update(row, 4, row, 6)
+                    board.update(row, 7, row, 5)
+                    self.history.append((start_pos, end_pos))
+                    rook.history.append(((row, 7), (row, 5)))
+                    return True
+
+            elif end_col == 2:  # Queenside
+                rook = board.grid[row][0]
+                if (rook != ' ' and rook.name == 'Rook'
+                        and len(rook.history) == 0
+                        and not board.piece_present(row, 1)[0]
+                        and not board.piece_present(row, 2)[0]
+                        and not board.piece_present(row, 3)[0]):
+                    board.update(row, 4, row, 2)
+                    board.update(row, 0, row, 3)
+                    self.history.append((start_pos, end_pos))
+                    rook.history.append(((row, 0), (row, 3)))
+                    return True
+
+            raise RuntimeError("Invalid Move")
+
+        # Normal move
+        if (InBounds(end_row, end_col)
+                and abs(start_row - end_row) <= 1
+                and abs(start_col - end_col) <= 1):
+            if board.piece_present(end_row, end_col)[0] == False:
+                board.update(start_row, start_col, end_row, end_col)
                 self.history.append((start_pos, end_pos))
                 return True
-            elif(board.piece_present(end_row, end_col)[0] == False):
-                board.update(start_row, start_col, end_row, end_col)
+            elif board.piece_present(end_row, end_col)[1] != self.color:
+                board.capture(start_row, start_col, end_row, end_col)
                 self.history.append((start_pos, end_pos))
                 return True
             else:
                 raise RuntimeError("Invalid Move")
-                return False
+        else:
+            raise RuntimeError("Invalid Move")
         

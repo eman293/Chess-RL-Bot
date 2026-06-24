@@ -3,19 +3,282 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Basic Website</title>
-  <link rel="stylesheet" href="style.css">
+  <title>Chess</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-family: sans-serif;
+    }
+    .boards-container {
+      display: flex;
+      gap: 60px;
+      align-items: flex-start;
+    }
+    .board-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .board-label {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    .board {
+      display: grid;
+      grid-template-columns: repeat(8, 50px);
+      grid-template-rows: repeat(8, 50px);
+      border: 2px solid black;
+    }
+    .cell {
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid gray;
+      font-size: 32px;
+      cursor: default;
+    }
+    .white { background-color: #f0d9b5; }
+    .black { background-color: #b58863; }
+    .cell[draggable="true"] { cursor: grab; }
+    .drag-over { outline: 3px solid blue; }
+    .dragging { opacity: 0.4; }
+
+    #statusBar {
+      font-family: sans-serif;
+      font-size: 18px;
+      margin: 12px 0;
+      min-height: 28px;
+      color: #333;
+    }
+    #statusBar.check { color: darkorange; font-weight: bold; }
+    #statusBar.checkmate { color: crimson; font-weight: bold; }
+    #statusBar.stalemate { color: steelblue; font-weight: bold; }
+
+    #promotionModal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+    #promotionModal.active { display: flex; }
+    #promotionBox {
+      background: white;
+      border-radius: 10px;
+      padding: 24px;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+    #promotionBox h2 { margin: 0 0 16px; }
+    .promotion-options { display: flex; gap: 12px; justify-content: center; }
+    .promotion-btn {
+      font-size: 40px;
+      width: 64px;
+      height: 64px;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #f9f9f9;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .promotion-btn:hover { background: #e0e0e0; border-color: #888; }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Basic Website Interface</h1>
-    <form id="dataForm">
-      <label for="inputData">Enter some data:</label>
-      <input type="text" id="inputData" name="inputData" required>
-      <button type="submit">Send to Backend</button>
-    </form>
-    <p id="response"></p>
+  <h1>Chess</h1>
+  <div id="statusBar"></div>
+
+  <div class="boards-container">
+    <div class="board-wrapper">
+      <div class="board-label">White</div>
+      <div class="board" id="boardWhite"></div>
+    </div>
+    <div class="board-wrapper">
+      <div class="board-label">Black</div>
+      <div class="board" id="boardBlack"></div>
+    </div>
   </div>
-  <script src="script.js"></script>
+
+  <div id="promotionModal">
+    <div id="promotionBox">
+      <h2>Promote Pawn</h2>
+      <div class="promotion-options" id="promotionOptions"></div>
+    </div>
+  </div>
+
+  <script>
+    (async () => {
+      // whose turn it is
+      let currentTurn = 'W';
+
+      async function fetchBoard() {
+        const response = await fetch('http://127.0.0.1:5000/api/board');
+        return await response.json();
+      }
+
+      // Render a board into a container element
+      // perspective: 'W' = white at bottom (rows reversed), 'B' = black at bottom (rows normal)
+      function renderBoard(boardData, containerId, perspective) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+
+        const rows = perspective === 'W' ? [...boardData].reverse() : boardData;
+
+        rows.forEach((row, rowIndex) => {
+          row.forEach((cell, colIndex) => {
+            const cellDiv = document.createElement('div');
+            cellDiv.className = `cell ${((rowIndex + colIndex) % 2 === 0) ? 'white' : 'black'}`;
+
+            // Convert visual row back to grid row
+            const gridRow = perspective === 'W' ? (7 - rowIndex) : rowIndex;
+
+            if (cell !== ' ') {
+              cellDiv.textContent = cell;
+
+              // Only allow dragging if it's your turn and your piece
+              const isWhitePiece = [
+                '♔','♕','♖','♗','♘','♙'
+              ].includes(cell);
+              const isBlackPiece = [
+                '♚','♛','♜','♝','♞','♟'
+              ].includes(cell);
+
+              const canDrag = (perspective === 'W' && isWhitePiece && currentTurn === 'W') ||
+                              (perspective === 'B' && isBlackPiece && currentTurn === 'B');
+
+              if (canDrag) {
+                cellDiv.draggable = true;
+                cellDiv.addEventListener('dragstart', (e) => {
+                  e.dataTransfer.setData('from-row', gridRow);
+                  e.dataTransfer.setData('from-col', colIndex);
+                  e.dataTransfer.setData('perspective', perspective);
+                  cellDiv.classList.add('dragging');
+                });
+                cellDiv.addEventListener('dragend', () => {
+                  cellDiv.classList.remove('dragging');
+                });
+              }
+            }
+
+            cellDiv.addEventListener('dragover', (e) => {
+              e.preventDefault();
+              cellDiv.classList.add('drag-over');
+            });
+            cellDiv.addEventListener('dragleave', () => {
+              cellDiv.classList.remove('drag-over');
+            });
+
+            cellDiv.addEventListener('drop', async (e) => {
+              e.preventDefault();
+              cellDiv.classList.remove('drag-over');
+
+              const fromRow = parseInt(e.dataTransfer.getData('from-row'));
+              const fromCol = parseInt(e.dataTransfer.getData('from-col'));
+              const dragPerspective = e.dataTransfer.getData('perspective');
+
+              // Only allow drops on the same board
+              if (dragPerspective !== perspective) return;
+
+              if (fromRow === gridRow && fromCol === colIndex) return;
+
+              const res = await fetch('http://127.0.0.1:5000/api/move', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  from: [fromRow, fromCol],
+                  to:   [gridRow, colIndex]
+                })
+              });
+
+              const data = await res.json();
+              if (data.error) {
+                alert(data.error);
+              } else if (data.promotion) {
+                renderBoth(data.board);
+                showPromotionPicker(data.board[gridRow][colIndex]);
+              } else {
+                currentTurn = currentTurn === 'W' ? 'B' : 'W';
+                renderBoth(data.board);
+                updateStatus(data);
+              }
+            });
+
+            container.appendChild(cellDiv);
+          });
+        });
+      }
+
+      function renderBoth(boardData) {
+        renderBoard(boardData, 'boardWhite', 'W');
+        renderBoard(boardData, 'boardBlack', 'B');
+      }
+
+      function updateStatus(data) {
+        const bar = document.getElementById('statusBar');
+        bar.className = '';
+        if (data.checkmate) {
+          const winner = data.checkmated_color === 'W' ? 'Black' : 'White';
+          bar.textContent = `Checkmate! ${winner} wins!`;
+          bar.className = 'checkmate';
+        } else if (data.stalemate) {
+          bar.textContent = `Stalemate! It's a draw!`;
+          bar.className = 'stalemate';
+        } else if (data.check) {
+          const inCheck = data.checked_color === 'B' ? 'Black' : 'White';
+          bar.textContent = `${inCheck} is in check!`;
+          bar.className = 'check';
+        } else {
+          bar.textContent = '';
+        }
+      }
+
+      function showPromotionPicker(pawnIcon) {
+        const isWhite = pawnIcon === '♙';
+        const pieces = isWhite
+          ? { queen: '♕', rook: '♖', bishop: '♗', knight: '♘' }
+          : { queen: '♛', rook: '♜', bishop: '♝', knight: '♞' };
+
+        const modal = document.getElementById('promotionModal');
+        const options = document.getElementById('promotionOptions');
+        options.innerHTML = '';
+
+        for (const [name, icon] of Object.entries(pieces)) {
+          const btn = document.createElement('button');
+          btn.className = 'promotion-btn';
+          btn.textContent = icon;
+          btn.title = name;
+          btn.addEventListener('click', async () => {
+            modal.classList.remove('active');
+            const res = await fetch('http://127.0.0.1:5000/api/promote', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ piece: name })
+            });
+            const data = await res.json();
+            if (data.error) {
+              alert(data.error);
+            } else {
+              currentTurn = currentTurn === 'W' ? 'B' : 'W';
+              renderBoth(data.board);
+              updateStatus(data);
+            }
+          });
+          options.appendChild(btn);
+        }
+
+        modal.classList.add('active');
+      }
+
+      const board = await fetchBoard();
+      renderBoth(board);
+    })();
+  </script>
 </body>
 </html>
