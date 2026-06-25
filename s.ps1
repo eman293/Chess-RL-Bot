@@ -1,5 +1,9 @@
+C:\Users\eman2\Documents\GitHub\Project\.venv\Scripts\Activate.ps1
+
+cd Game
+
 Write-Host "Starting python server..."
-Start-Process -FilePath "python.exe" -ArgumentList "Game/game.py" -NoNewWindow
+Start-Process -FilePath "python.exe" -ArgumentList "game.py" -NoNewWindow
 
 Write-Host "Starting html page"
-Start-Process "Game/index.html" -PassThru
+Start-Process "index.html" -PassThru

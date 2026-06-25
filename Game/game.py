@@ -4,6 +4,7 @@ from pieces import *
 from board import Board, is_in_check, is_in_checkmate, is_stalemate
 import copy
 import math
+from stockfish import Stockfish
 
 app = Flask(__name__)
 CORS(app)
@@ -12,7 +13,7 @@ global board
 last_move = None  
 pending_promotion = None
 last_pawn_move_or_capture = 0
-num_moves_total = 0  
+num_moves_total = 1  
 
 def setup():
     global board
@@ -117,6 +118,7 @@ def move_piece():
         stalemate = not in_check and is_stalemate(board, opponent, last_move)
 
         print(board_to_fen())
+        print(get_eval())
 
         return jsonify({
             'board': board.display(),
@@ -138,11 +140,11 @@ def get_eval_route():
 
 def get_eval():
     fen = board_to_fen()
-
-    #send request
-    #get response
-    #return evaluation
-    val = 0
+    print(fen)
+    stockfish = Stockfish(path=r"C:\Users\eman2\Documents\GitHub\Project\Game\stockfish\stockfish-windows-x86-64-avx2.exe")
+    
+    stockfish.set_fen_position(str(fen), do_validation = False)
+    val = stockfish.get_evaluation()
     return val
 
 def board_to_fen():
