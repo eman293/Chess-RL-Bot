@@ -3,13 +3,16 @@ from flask_cors import CORS
 from pieces import *
 from board import Board, is_in_check, is_in_checkmate, is_stalemate
 import copy
+import math
 
 app = Flask(__name__)
 CORS(app)
 
 global board
 last_move = None  
-pending_promotion = None  
+pending_promotion = None
+last_pawn_move_or_capture = 0
+num_moves_total = 0  
 
 def setup():
     global board
@@ -53,14 +56,10 @@ def reset_board():
     pending_promotion = None
     return jsonify({'board': board.display()})
 
-@app.route('/api/board_to_fen', methods=['GET'])
-def board_to_fen():
-    global board
-    
 
 @app.route('/api/move', methods=['POST'])
 def move_piece():
-    global last_move, pending_promotion
+    global last_move, pending_promotion, last_pawn_move_or_capture, num_moves_total
 
     data = request.get_json()
     from_row, from_col = data['from']
@@ -97,6 +96,13 @@ def move_piece():
             pending_promotion = (to_row, to_col, piece.color)
             return jsonify({'promotion': True, 'row': to_row, 'col': to_col, 'board': board.display()})
 
+        if(isinstance(piece, Pawn) or board.grid[to_row][to_col] != ' '):
+            last_pawn_move_or_capture = 0
+        else:
+            last_pawn_move_or_capture += 1
+
+        num_moves_total += 1
+
         # Normal move
         piece.move((from_row, from_col), (to_row, to_col), board, last_move)
         last_move = (piece, (from_row, from_col), (to_row, to_col))
@@ -109,6 +115,8 @@ def move_piece():
         in_check = is_in_check(board, opponent, last_move)
         checkmate = in_check and is_in_checkmate(board, opponent, last_move)
         stalemate = not in_check and is_stalemate(board, opponent, last_move)
+
+        print(board_to_fen())
 
         return jsonify({
             'board': board.display(),
@@ -123,6 +131,85 @@ def move_piece():
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
+@app.route('/api/eval', methods=['GET'])
+def get_eval_route():
+    evaluation = get_eval()
+    return jsonify({'evaluation': evaluation})
+
+def get_eval():
+    fen = board_to_fen()
+
+    #send request
+    #get response
+    #return evaluation
+    val = 0
+    return val
+
+def board_to_fen():
+    global board, last_move, last_pawn_move_or_capture, num_moves_total
+
+    fen_format = ""
+    for i in range(len(board.grid) - 1, -1, -1):
+        count_empty = 0
+        for j in range(len(board.grid[i])):
+            piece = board.grid[i][j]
+            if piece != ' ':
+                if(count_empty > 0):
+                    fen_format += str(count_empty)
+                    count_empty = 0
+                fen_format += piece.fen
+            else:
+                count_empty += 1
+
+        if(count_empty > 0):
+            fen_format += str(count_empty)
+        if(i > 0):
+            fen_format += "/"
+    
+    if(last_move is None or last_move[0].color == 'B'):
+        fen_format += " w "
+    else:
+        fen_format += " b "
+
+    ##TODO FIX ICONS SO COLORS AND POSITION ARE CONSISTENT WITH TERMINAL, BACKEND, AND HTML
+    pot_w_rookl = board.grid[0][0].history if isinstance(board.grid[0][0], Rook) and board.grid[0][0].color == 'W' else None
+    pot_w_king = board.grid[0][4].history if isinstance(board.grid[0][4], King) and board.grid[0][4].color == 'W' else None
+    pot_w_rookr = board.grid[0][7].history if isinstance(board.grid[0][7], Rook) and board.grid[0][7].color == 'W' else None
+
+    if(pot_w_king is None or len(pot_w_king) > 0 or (pot_w_rookl is None and pot_w_rookr is None) or (len(pot_w_rookl) > 0 and len(pot_w_rookr) > 0)):
+        fen_format += "--"
+    else:
+        if(pot_w_rookr is not None and len(pot_w_rookr) == 0):
+            fen_format += "K"
+        if(pot_w_rookl is not None and len(pot_w_rookl) == 0):
+            fen_format += "Q"
+
+    pot_b_rookl = board.grid[7][0].history if isinstance(board.grid[7][0], Rook) and board.grid[7][0].color == 'B' else None
+    pot_b_king = board.grid[7][4].history if isinstance(board.grid[7][4], King) and board.grid[7][4].color == 'B' else None
+    pot_b_rookr = board.grid[7][7].history if isinstance(board.grid[7][7], Rook) and board.grid[7][7].color == 'B' else None
+
+    if(pot_b_king is None or len(pot_b_king) > 0 or (pot_b_rookl is None and pot_b_rookr is None) or (len(pot_b_rookl) > 0 and len(pot_b_rookr) > 0)):
+        fen_format += "--"
+    else:
+        if(pot_b_rookr is not None and len(pot_b_rookr) == 0):
+            fen_format += "k"
+        if(pot_b_rookl is not None and len(pot_b_rookl) == 0):
+            fen_format += "q"
+    
+    fen_format += " "
+
+    if(last_move is None or not isinstance(last_move[0], Pawn)):
+        fen_format += "- "
+    else:
+        last_piece, (from_row, from_col), (to_row, to_col) = last_move
+        if abs(from_row - to_row) == 2:
+            fen_format += f"{chr(to_col + ord('a'))}{8 - to_row - 1} "
+        else:
+            fen_format += "- "
+    
+    fen_format += str(last_pawn_move_or_capture) + " " + str(math.floor(num_moves_total / 2))
+
+    return fen_format
 
 @app.route('/api/promote', methods=['POST'])
 def promote_piece():
@@ -214,4 +301,5 @@ def debug_grid():
 
 if __name__ == '__main__':
     setup()
+    print(board_to_fen())
     app.run(host='0.0.0.0', port = 5000)

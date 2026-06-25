@@ -13,6 +13,9 @@ class Board:
 
         for i in range(len(self.grid)):
             print('|'.join(row.icon if row != ' ' else ' ' for row in self.grid[i]))
+
+        for i in range(len(self.grid)):
+            print('|'.join(row.color if row != ' ' else ' ' for row in self.grid[i]))
         
         return rows
 

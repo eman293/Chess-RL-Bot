@@ -2,11 +2,12 @@ def InBounds(x1, y1):
     return (0 <= x1 < 8) and (0 <= y1 < 8)
 
 class Piece:
-    def __init__(self, name, color, icon):
+    def __init__(self, name, color, icon, fen):
         self.name = name
         self.color = color
         self.icon = icon
         self.history = []
+        self.fen = fen
 
     def __str__(self):
         return f"{self.color} {self.name}"
@@ -18,9 +19,9 @@ class Piece:
 class Pawn(Piece):
     def __init__(self, color):
         if color == 'W':
-            super().__init__("Pawn", color, chr(0x2659))  # ♙ outline = white
+            super().__init__("Pawn", color, chr(0x2659), 'P')  # ♙ outline = white
         else:
-            super().__init__("Pawn", color, chr(0x265F))  # ♟ filled = black
+            super().__init__("Pawn", color, chr(0x265F), 'p')  # ♟ filled = black
 
     def move(self, start_pos, end_pos, board, last_move=None):
         start_row, start_col = start_pos
@@ -117,9 +118,9 @@ class Pawn(Piece):
 class Knight(Piece):
     def __init__(self, color):
         if color == 'W':
-            super().__init__("Knight", color, chr(0x2658))  # ♘ outline = white
+            super().__init__("Knight", color, chr(0x2658), 'N')  # ♘ outline = white
         else:
-            super().__init__("Knight", color, chr(0x265E))  # ♞ filled = black
+            super().__init__("Knight", color, chr(0x265E), 'n')  # ♞ filled = black
 
     def move(self, start_pos, end_pos, board, last_move=None):
         start_row, start_col = start_pos
@@ -145,9 +146,9 @@ class Knight(Piece):
 class Rook(Piece):
     def __init__(self, color):
         if color == 'W':
-            super().__init__("Rook", color, chr(0x2656))  # ♖ outline = white
+            super().__init__("Rook", color, chr(0x2656), 'R')  # ♖ outline = white
         else:
-            super().__init__("Rook", color, chr(0x265C))  # ♜ filled = black
+            super().__init__("Rook", color, chr(0x265C), 'r')  # ♜ filled = black
 
     def move(self, start_pos, end_pos, board, last_move=None):
         start_row, start_col = start_pos
@@ -179,9 +180,9 @@ class Rook(Piece):
 class Bishop(Piece):
     def __init__(self, color):
         if color == 'W':
-            super().__init__("Bishop", color, chr(0x2657))  # ♗ outline = white
+            super().__init__("Bishop", color, chr(0x2657), 'B')  # ♗ outline = white
         else:
-            super().__init__("Bishop", color, chr(0x265D))  # ♝ filled = black
+            super().__init__("Bishop", color, chr(0x265D), 'b')  # ♝ filled = black
 
     def move(self, start_pos, end_pos, board, last_move=None):
         start_row, start_col = start_pos
@@ -213,9 +214,9 @@ class Bishop(Piece):
 class Queen(Piece):
     def __init__(self, color):
         if color == 'W':
-            super().__init__("Queen", color, chr(0x2655))  # ♕ outline = white
+            super().__init__("Queen", color, chr(0x2655), 'Q')  # ♕ outline = white
         else:
-            super().__init__("Queen", color, chr(0x265B))  # ♛ filled = black
+            super().__init__("Queen", color, chr(0x265B), 'q')  # ♛ filled = black
 
     def move(self, start_pos, end_pos, board, last_move=None):
         start_row, start_col = start_pos
@@ -254,9 +255,9 @@ class Queen(Piece):
 class King(Piece):
     def __init__(self, color):
         if color == 'W':
-            super().__init__("King", color, chr(0x2654))  # ♔ outline = white
+            super().__init__("King", color, chr(0x2654), 'K')  # ♔ outline = white
         else:
-            super().__init__("King", color, chr(0x265A))  # ♚ filled = black
+            super().__init__("King", color, chr(0x265A), 'k')  # ♚ filled = black
 
     def move(self, start_pos, end_pos, board, last_move=None):
         start_row, start_col = start_pos

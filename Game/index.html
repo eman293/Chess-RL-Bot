@@ -617,6 +617,8 @@
                 })
               });
 
+              //Call eval here to get new position evaluation
+
               const data = await res.json();
               if (data.error) {
                 alert(data.error);
