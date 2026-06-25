@@ -5,12 +5,63 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Chess</title>
   <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
       font-family: sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      min-height: 100vh;
     }
+
+    /* NAV */
+    nav {
+      display: flex;
+      gap: 8px;
+      padding: 16px 24px;
+      background: #16213e;
+      border-bottom: 2px solid #0f3460;
+    }
+    .nav-btn {
+      padding: 8px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 15px;
+      background: #0f3460;
+      color: #eee;
+      transition: background 0.2s;
+    }
+    .nav-btn.active { background: #e94560; color: white; }
+    .nav-btn:hover:not(.active) { background: #1a4a8a; }
+
+    /* PAGES */
+    .page { display: none; padding: 32px; }
+    .page.active { display: flex; flex-direction: column; align-items: center; }
+
+    h1 { margin-bottom: 16px; font-size: 28px; }
+    h2 { margin-bottom: 16px; font-size: 22px; }
+
+    /* STATUS */
+    #statusBar {
+      font-size: 18px;
+      margin-bottom: 12px;
+      min-height: 28px;
+      color: #eee;
+    }
+    #statusBar.check { color: orange; font-weight: bold; }
+    #statusBar.checkmate { color: #e94560; font-weight: bold; }
+    #statusBar.stalemate { color: steelblue; font-weight: bold; }
+
+    /* TURN INDICATOR */
+    #turnIndicator {
+      font-size: 16px;
+      margin-bottom: 16px;
+      padding: 6px 16px;
+      border-radius: 20px;
+      background: #0f3460;
+    }
+
+    /* BOARDS */
     .boards-container {
       display: flex;
       gap: 60px;
@@ -20,92 +71,318 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+      gap: 8px;
     }
     .board-label {
-      font-size: 20px;
+      font-size: 18px;
       font-weight: bold;
-      margin-bottom: 8px;
     }
     .board {
       display: grid;
-      grid-template-columns: repeat(8, 50px);
-      grid-template-rows: repeat(8, 50px);
-      border: 2px solid black;
+      grid-template-columns: repeat(8, 56px);
+      grid-template-rows: repeat(8, 56px);
+      border: 3px solid #0f3460;
+      border-radius: 4px;
+      overflow: hidden;
     }
     .cell {
-      width: 50px;
-      height: 50px;
+      width: 56px;
+      height: 56px;
       display: flex;
       align-items: center;
       justify-content: center;
-      border: 1px solid gray;
-      font-size: 32px;
+      font-size: 36px;
       cursor: default;
     }
     .white { background-color: #f0d9b5; }
     .black { background-color: #b58863; }
     .cell[draggable="true"] { cursor: grab; }
-    .drag-over { outline: 3px solid blue; }
+    .drag-over { outline: 3px solid #4fc3f7; }
     .dragging { opacity: 0.4; }
 
-    #statusBar {
-      font-family: sans-serif;
-      font-size: 18px;
-      margin: 12px 0;
-      min-height: 28px;
-      color: #333;
-    }
-    #statusBar.check { color: darkorange; font-weight: bold; }
-    #statusBar.checkmate { color: crimson; font-weight: bold; }
-    #statusBar.stalemate { color: steelblue; font-weight: bold; }
-
+    /* PROMOTION MODAL */
     #promotionModal {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.5);
+      background: rgba(0,0,0,0.6);
       align-items: center;
       justify-content: center;
       z-index: 10;
     }
     #promotionModal.active { display: flex; }
     #promotionBox {
-      background: white;
-      border-radius: 10px;
-      padding: 24px;
+      background: #16213e;
+      border: 2px solid #0f3460;
+      border-radius: 12px;
+      padding: 28px;
       text-align: center;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
     }
-    #promotionBox h2 { margin: 0 0 16px; }
+    #promotionBox h2 { margin-bottom: 16px; color: #eee; }
     .promotion-options { display: flex; gap: 12px; justify-content: center; }
     .promotion-btn {
       font-size: 40px;
-      width: 64px;
-      height: 64px;
-      border: 2px solid #ccc;
+      width: 68px;
+      height: 68px;
+      border: 2px solid #0f3460;
       border-radius: 8px;
       cursor: pointer;
-      background: #f9f9f9;
-      transition: background 0.15s, border-color 0.15s;
+      background: #0f3460;
+      color: white;
+      transition: background 0.15s;
     }
-    .promotion-btn:hover { background: #e0e0e0; border-color: #888; }
+    .promotion-btn:hover { background: #1a4a8a; }
+
+    /* BOT PAGE */
+    .bot-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+      width: 100%;
+      max-width: 600px;
+    }
+    .bot-section {
+      background: #16213e;
+      border: 1px solid #0f3460;
+      border-radius: 10px;
+      padding: 24px;
+      width: 100%;
+    }
+    .bot-section h3 {
+      margin-bottom: 16px;
+      font-size: 18px;
+      color: #4fc3f7;
+      border-bottom: 1px solid #0f3460;
+      padding-bottom: 8px;
+    }
+    .form-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      gap: 16px;
+    }
+    .form-row label { font-size: 15px; color: #ccc; }
+    .form-row input, .form-row select {
+      background: #0f3460;
+      border: 1px solid #1a4a8a;
+      border-radius: 6px;
+      color: #eee;
+      padding: 6px 12px;
+      font-size: 14px;
+      width: 200px;
+    }
+    .form-row input[type="range"] {
+      width: 160px;
+      accent-color: #e94560;
+    }
+    .range-value {
+      min-width: 32px;
+      text-align: right;
+      color: #e94560;
+      font-weight: bold;
+    }
+    .btn {
+      padding: 10px 28px;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-primary { background: #e94560; color: white; }
+    .btn-primary:hover { background: #c73652; }
+    .btn-secondary { background: #0f3460; color: #eee; }
+    .btn-secondary:hover { background: #1a4a8a; }
+    .btn-success { background: #2e7d32; color: white; }
+    .btn-success:hover { background: #1b5e20; }
+
+    .bot-status {
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      background: #0f3460;
+      color: #ccc;
+      width: 100%;
+      min-height: 48px;
+    }
+    .bot-status.running { color: #4fc3f7; border-left: 3px solid #4fc3f7; }
+    .bot-status.success { color: #81c784; border-left: 3px solid #81c784; }
+    .bot-status.error { color: #e94560; border-left: 3px solid #e94560; }
+
+    .training-controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .stat-box {
+      background: #0f3460;
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+    }
+    .stat-box .stat-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #4fc3f7;
+    }
+    .stat-box .stat-label {
+      font-size: 12px;
+      color: #aaa;
+      margin-top: 4px;
+    }
+
+    .color-selector {
+      display: flex;
+      gap: 10px;
+    }
+    .color-btn {
+      padding: 8px 20px;
+      border: 2px solid #0f3460;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      background: #0f3460;
+      color: #eee;
+      transition: all 0.2s;
+    }
+    .color-btn.selected { border-color: #e94560; background: #e94560; }
   </style>
 </head>
 <body>
-  <h1>Chess</h1>
-  <div id="statusBar"></div>
 
-  <div class="boards-container">
-    <div class="board-wrapper">
-      <div class="board-label">White</div>
-      <div class="board" id="boardWhite"></div>
-    </div>
-    <div class="board-wrapper">
-      <div class="board-label">Black</div>
-      <div class="board" id="boardBlack"></div>
+  <nav>
+    <button class="nav-btn active" onclick="showPage('game')">♟ Play</button>
+    <button class="nav-btn" onclick="showPage('bot')">🤖 RL Bot</button>
+  </nav>
+
+  <!-- GAME PAGE -->
+  <div class="page active" id="page-game">
+    <h1>Chess</h1>
+    <div id="statusBar"></div>
+    <div id="turnIndicator">White's turn</div>
+    <div class="boards-container">
+      <div class="board-wrapper">
+        <div class="board-label">♔ White</div>
+        <div class="board" id="boardWhite"></div>
+      </div>
+      <div class="board-wrapper">
+        <div class="board-label">♚ Black</div>
+        <div class="board" id="boardBlack"></div>
+      </div>
     </div>
   </div>
 
+  <!-- BOT PAGE -->
+  <div class="page" id="page-bot">
+    <h1>RL Bot Configuration</h1>
+    <div class="bot-container">
+
+      <!-- Model -->
+      <div class="bot-section">
+        <h3>Model</h3>
+        <div class="form-row">
+          <label>Algorithm</label>
+          <select id="botAlgorithm">
+            <option value="dqn">DQN</option>
+            <option value="ppo">PPO</option>
+            <option value="a3c">A3C</option>
+            <option value="alphazero">AlphaZero-style MCTS</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Model file</label>
+          <input type="text" id="modelPath" placeholder="models/chess_bot.pt" />
+        </div>
+        <div class="form-row">
+          <label>Play as</label>
+          <div class="color-selector">
+            <button class="color-btn selected" id="colorW" onclick="selectColor('W')">White</button>
+            <button class="color-btn" id="colorB" onclick="selectColor('B')">Black</button>
+          </div>
+        </div>
+        <div class="form-row">
+          <label></label>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-primary" onclick="loadBot()">Load Model</button>
+            <button class="btn btn-secondary" onclick="resetBot()">Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Training -->
+      <div class="bot-section">
+        <h3>Training</h3>
+        <div class="form-row">
+          <label>Episodes</label>
+          <input type="number" id="trainEpisodes" value="1000" min="1" />
+        </div>
+        <div class="form-row">
+          <label>Learning rate</label>
+          <input type="number" id="learningRate" value="0.001" step="0.0001" min="0.00001" />
+        </div>
+        <div class="form-row">
+          <label>Discount (γ)</label>
+          <input type="range" id="gamma" min="0.8" max="0.999" step="0.001" value="0.99"
+            oninput="document.getElementById('gammaVal').textContent=this.value" />
+          <span class="range-value" id="gammaVal">0.99</span>
+        </div>
+        <div class="form-row">
+          <label>Epsilon (ε)</label>
+          <input type="range" id="epsilon" min="0.0" max="1.0" step="0.01" value="1.0"
+            oninput="document.getElementById('epsilonVal').textContent=this.value" />
+          <span class="range-value" id="epsilonVal">1.00</span>
+        </div>
+        <div class="form-row">
+          <label>Batch size</label>
+          <input type="number" id="batchSize" value="64" min="1" />
+        </div>
+        <div class="form-row">
+          <label>Save every N episodes</label>
+          <input type="number" id="saveInterval" value="100" min="1" />
+        </div>
+        <div class="training-controls">
+          <button class="btn btn-success" onclick="startTraining()">▶ Start Training</button>
+          <button class="btn btn-secondary" onclick="stopTraining()">⏹ Stop</button>
+          <button class="btn btn-secondary" onclick="saveModel()">💾 Save Model</button>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="bot-section">
+        <h3>Training Stats</h3>
+        <div class="stat-grid">
+          <div class="stat-box">
+            <div class="stat-value" id="statEpisode">0</div>
+            <div class="stat-label">Episode</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value" id="statWinRate">0%</div>
+            <div class="stat-label">Win Rate</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value" id="statAvgReward">0.00</div>
+            <div class="stat-label">Avg Reward</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value" id="statEpsilon">1.00</div>
+            <div class="stat-label">Current ε</div>
+          </div>
+        </div>
+        <div class="bot-status" id="botStatus">No model loaded.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- PROMOTION MODAL -->
   <div id="promotionModal">
     <div id="promotionBox">
       <h2>Promote Pawn</h2>
@@ -114,21 +391,142 @@
   </div>
 
   <script>
+    // ─── PAGE NAV ───────────────────────────────────────────────────────────
+    function showPage(name) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('page-' + name).classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    // ─── BOT PAGE ────────────────────────────────────────────────────────────
+    let botColor = 'W';
+
+    function selectColor(c) {
+      botColor = c;
+      document.getElementById('colorW').classList.toggle('selected', c === 'W');
+      document.getElementById('colorB').classList.toggle('selected', c === 'B');
+    }
+
+    function setBotStatus(msg, type = '') {
+      const el = document.getElementById('botStatus');
+      el.textContent = msg;
+      el.className = 'bot-status ' + type;
+    }
+
+    async function loadBot() {
+      const path = document.getElementById('modelPath').value;
+      const algo = document.getElementById('botAlgorithm').value;
+      setBotStatus(`Loading ${algo} model from ${path || 'default path'}...`, 'running');
+      try {
+        const res = await fetch('http://127.0.0.1:5000/api/bot/load', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path, algorithm: algo, color: botColor })
+        });
+        const data = await res.json();
+        if (data.error) setBotStatus(data.error, 'error');
+        else setBotStatus(data.message || 'Model loaded.', 'success');
+      } catch {
+        setBotStatus('Could not reach server.', 'error');
+      }
+    }
+
+    function resetBot() {
+      setBotStatus('Bot reset.', '');
+      document.getElementById('statEpisode').textContent = '0';
+      document.getElementById('statWinRate').textContent = '0%';
+      document.getElementById('statAvgReward').textContent = '0.00';
+      document.getElementById('statEpsilon').textContent = '1.00';
+    }
+
+    let trainingInterval = null;
+
+    async function startTraining() {
+      const config = {
+        episodes: parseInt(document.getElementById('trainEpisodes').value),
+        learning_rate: parseFloat(document.getElementById('learningRate').value),
+        gamma: parseFloat(document.getElementById('gamma').value),
+        epsilon: parseFloat(document.getElementById('epsilon').value),
+        batch_size: parseInt(document.getElementById('batchSize').value),
+        save_interval: parseInt(document.getElementById('saveInterval').value),
+        algorithm: document.getElementById('botAlgorithm').value,
+        color: botColor
+      };
+
+      setBotStatus('Training started...', 'running');
+
+      try {
+        await fetch('http://127.0.0.1:5000/api/bot/train/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(config)
+        });
+      } catch {
+        setBotStatus('Could not reach server.', 'error');
+        return;
+      }
+
+      // Poll for stats every 2 seconds
+      trainingInterval = setInterval(async () => {
+        try {
+          const res = await fetch('http://127.0.0.1:5000/api/bot/stats');
+          const data = await res.json();
+          if (data.episode !== undefined) {
+            document.getElementById('statEpisode').textContent = data.episode;
+            document.getElementById('statWinRate').textContent =
+              (data.win_rate * 100).toFixed(1) + '%';
+            document.getElementById('statAvgReward').textContent =
+              data.avg_reward.toFixed(2);
+            document.getElementById('statEpsilon').textContent =
+              data.epsilon.toFixed(3);
+            setBotStatus(`Training... episode ${data.episode}`, 'running');
+            if (data.done) {
+              clearInterval(trainingInterval);
+              setBotStatus('Training complete!', 'success');
+            }
+          }
+        } catch {}
+      }, 2000);
+    }
+
+    async function stopTraining() {
+      clearInterval(trainingInterval);
+      try {
+        await fetch('http://127.0.0.1:5000/api/bot/train/stop', { method: 'POST' });
+      } catch {}
+      setBotStatus('Training stopped.', '');
+    }
+
+    async function saveModel() {
+      const path = document.getElementById('modelPath').value;
+      setBotStatus('Saving model...', 'running');
+      try {
+        const res = await fetch('http://127.0.0.1:5000/api/bot/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path })
+        });
+        const data = await res.json();
+        if (data.error) setBotStatus(data.error, 'error');
+        else setBotStatus(data.message || 'Model saved.', 'success');
+      } catch {
+        setBotStatus('Could not reach server.', 'error');
+      }
+    }
+
+    // ─── GAME ────────────────────────────────────────────────────────────────
     (async () => {
-      // whose turn it is
       let currentTurn = 'W';
 
       async function fetchBoard() {
-        const response = await fetch('http://127.0.0.1:5000/api/board');
-        return await response.json();
+        const res = await fetch('http://127.0.0.1:5000/api/board');
+        return await res.json();
       }
 
-      // Render a board into a container element
-      // perspective: 'W' = white at bottom (rows reversed), 'B' = black at bottom (rows normal)
       function renderBoard(boardData, containerId, perspective) {
         const container = document.getElementById(containerId);
         container.innerHTML = '';
-
         const rows = perspective === 'W' ? [...boardData].reverse() : boardData;
 
         rows.forEach((row, rowIndex) => {
@@ -136,22 +534,19 @@
             const cellDiv = document.createElement('div');
             cellDiv.className = `cell ${((rowIndex + colIndex) % 2 === 0) ? 'white' : 'black'}`;
 
-            // Convert visual row back to grid row
-            const gridRow = perspective === 'W' ? (7 - rowIndex) : rowIndex;
+            const gridRow = perspective === 'W' ? (rowIndex) : (7 - rowIndex);
 
             if (cell !== ' ') {
               cellDiv.textContent = cell;
 
-              // Only allow dragging if it's your turn and your piece
-              const isWhitePiece = [
-                '♔','♕','♖','♗','♘','♙'
-              ].includes(cell);
-              const isBlackPiece = [
-                '♚','♛','♜','♝','♞','♟'
-              ].includes(cell);
+              const whitePieces = ['♚','♛','♜','♝','♞','♟'];
+              const blackPieces = ['♔','♕','♖','♗','♘','♙'];
+              const isWhitePiece = whitePieces.includes(cell);
+              const isBlackPiece = blackPieces.includes(cell);
 
-              const canDrag = (perspective === 'W' && isWhitePiece && currentTurn === 'W') ||
-                              (perspective === 'B' && isBlackPiece && currentTurn === 'B');
+              const canDrag =
+                (perspective === 'W' && isWhitePiece && currentTurn === 'W') ||
+                (perspective === 'B' && isBlackPiece && currentTurn === 'B');
 
               if (canDrag) {
                 cellDiv.draggable = true;
@@ -174,7 +569,6 @@
             cellDiv.addEventListener('dragleave', () => {
               cellDiv.classList.remove('drag-over');
             });
-
             cellDiv.addEventListener('drop', async (e) => {
               e.preventDefault();
               cellDiv.classList.remove('drag-over');
@@ -183,9 +577,7 @@
               const fromCol = parseInt(e.dataTransfer.getData('from-col'));
               const dragPerspective = e.dataTransfer.getData('perspective');
 
-              // Only allow drops on the same board
               if (dragPerspective !== perspective) return;
-
               if (fromRow === gridRow && fromCol === colIndex) return;
 
               const res = await fetch('http://127.0.0.1:5000/api/move', {
@@ -207,6 +599,7 @@
                 currentTurn = currentTurn === 'W' ? 'B' : 'W';
                 renderBoth(data.board);
                 updateStatus(data);
+                updateTurnIndicator();
               }
             });
 
@@ -220,6 +613,11 @@
         renderBoard(boardData, 'boardBlack', 'B');
       }
 
+      function updateTurnIndicator() {
+        document.getElementById('turnIndicator').textContent =
+          currentTurn === 'W' ? "White's turn" : "Black's turn";
+      }
+
       function updateStatus(data) {
         const bar = document.getElementById('statusBar');
         bar.className = '';
@@ -228,7 +626,7 @@
           bar.textContent = `Checkmate! ${winner} wins!`;
           bar.className = 'checkmate';
         } else if (data.stalemate) {
-          bar.textContent = `Stalemate! It's a draw!`;
+          bar.textContent = "Stalemate! It's a draw!";
           bar.className = 'stalemate';
         } else if (data.check) {
           const inCheck = data.checked_color === 'B' ? 'Black' : 'White';
@@ -240,10 +638,10 @@
       }
 
       function showPromotionPicker(pawnIcon) {
-        const isWhite = pawnIcon === '♙';
+        const isWhite = pawnIcon === '♟';
         const pieces = isWhite
-          ? { queen: '♕', rook: '♖', bishop: '♗', knight: '♘' }
-          : { queen: '♛', rook: '♜', bishop: '♝', knight: '♞' };
+          ? { queen: '♛', rook: '♜', bishop: '♝', knight: '♞' } 
+          : { queen: '♕', rook: '♖', bishop: '♗', knight: '♘' };
 
         const modal = document.getElementById('promotionModal');
         const options = document.getElementById('promotionOptions');
@@ -268,6 +666,7 @@
               currentTurn = currentTurn === 'W' ? 'B' : 'W';
               renderBoth(data.board);
               updateStatus(data);
+              updateTurnIndicator();
             }
           });
           options.appendChild(btn);
