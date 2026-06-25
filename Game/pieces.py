@@ -19,7 +19,7 @@ class Piece:
 class Pawn(Piece):
     def __init__(self, color):
         if color == 'W':
-            super().__init__("Pawn", color, chr(0x2659), 'P')  # ♙ outline = white
+            super().__init__("Pawn", color, chr(0x265F), 'P')  # ♙ outline = white
         else:
             super().__init__("Pawn", color, chr(0x265F), 'p')  # ♟ filled = black
 
@@ -118,7 +118,7 @@ class Pawn(Piece):
 class Knight(Piece):
     def __init__(self, color):
         if color == 'W':
-            super().__init__("Knight", color, chr(0x2658), 'N')  # ♘ outline = white
+            super().__init__("Knight", color, chr(0x265E), 'N')  # ♘ outline = white
         else:
             super().__init__("Knight", color, chr(0x265E), 'n')  # ♞ filled = black
 
@@ -146,7 +146,7 @@ class Knight(Piece):
 class Rook(Piece):
     def __init__(self, color):
         if color == 'W':
-            super().__init__("Rook", color, chr(0x2656), 'R')  # ♖ outline = white
+            super().__init__("Rook", color, chr(0x265C), 'R')  # ♖ outline = white
         else:
             super().__init__("Rook", color, chr(0x265C), 'r')  # ♜ filled = black
 
@@ -180,7 +180,7 @@ class Rook(Piece):
 class Bishop(Piece):
     def __init__(self, color):
         if color == 'W':
-            super().__init__("Bishop", color, chr(0x2657), 'B')  # ♗ outline = white
+            super().__init__("Bishop", color, chr(0x265D), 'B')  # ♗ outline = white
         else:
             super().__init__("Bishop", color, chr(0x265D), 'b')  # ♝ filled = black
 
@@ -214,7 +214,7 @@ class Bishop(Piece):
 class Queen(Piece):
     def __init__(self, color):
         if color == 'W':
-            super().__init__("Queen", color, chr(0x2655), 'Q')  # ♕ outline = white
+            super().__init__("Queen", color, chr(0x265B), 'Q')  # ♕ outline = white
         else:
             super().__init__("Queen", color, chr(0x265B), 'q')  # ♛ filled = black
 
@@ -255,7 +255,7 @@ class Queen(Piece):
 class King(Piece):
     def __init__(self, color):
         if color == 'W':
-            super().__init__("King", color, chr(0x2654), 'K')  # ♔ outline = white
+            super().__init__("King", color, chr(0x265A), 'K')  # ♔ outline = white
         else:
             super().__init__("King", color, chr(0x265A), 'k')  # ♚ filled = black
 
