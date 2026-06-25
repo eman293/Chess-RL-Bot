@@ -94,6 +94,9 @@
       font-size: 36px;
       cursor: default;
     }
+    .reset-container {
+      margin-top: 24px;
+    }
     .white { background-color: #f0d9b5; }
     .black { background-color: #b58863; }
     .cell[draggable="true"] { cursor: grab; }
@@ -541,7 +544,7 @@
           alert('Failed to reset the board. Please try again.');
         }
       });
-      
+
       let currentTurn = 'W';
 
       async function fetchBoard() {
