@@ -278,6 +278,9 @@
         <div class="board" id="boardBlack"></div>
       </div>
     </div>
+    <div class="reset-container">
+      <button class="btn btn-secondary" id="resetBoardBtn">Reset Board</button>
+    </div>
   </div>
 
   <!-- BOT PAGE -->
@@ -398,6 +401,7 @@
       document.getElementById('page-' + name).classList.add('active');
       event.target.classList.add('active');
     }
+    
 
     // ─── BOT PAGE ────────────────────────────────────────────────────────────
     let botColor = 'W';
@@ -517,6 +521,27 @@
 
     // ─── GAME ────────────────────────────────────────────────────────────────
     (async () => {
+      document.getElementById('resetBoardBtn').addEventListener('click', async () => {
+        try {
+          const response = await fetch('http://127.0.0.1:5000/api/reset', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          });
+          const data = await response.json();
+          if (data.board) {
+            currentTurn = 'W'; // Reset the turn to White
+            renderBoth(data.board); // Re-render the board
+            updateTurnIndicator(); // Update the turn indicator
+            document.getElementById('statusBar').textContent = ''; // Clear the status bar
+          } else if (data.error) {
+            alert(data.error);
+          }
+        } catch (error) {
+          console.error('Error resetting the board:', error);
+          alert('Failed to reset the board. Please try again.');
+        }
+      });
+      
       let currentTurn = 'W';
 
       async function fetchBoard() {

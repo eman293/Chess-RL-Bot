@@ -45,6 +45,19 @@ def setup():
 def get_board():
     return jsonify(board.display())
 
+@app.route('/api/reset', methods=['POST'])
+def reset_board():
+    global board, last_move, pending_promotion
+    board = setup()
+    last_move = None
+    pending_promotion = None
+    return jsonify({'board': board.display()})
+
+@app.route('/api/board_to_fen', methods=['GET'])
+def board_to_fen():
+    global board
+    
+
 @app.route('/api/move', methods=['POST'])
 def move_piece():
     global last_move, pending_promotion
