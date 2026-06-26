@@ -61,7 +61,6 @@ def reset_board():
 @app.route('/api/move', methods=['POST'])
 def move_piece():
     global last_move, pending_promotion, last_pawn_move_or_capture, num_moves_total
-
     data = request.get_json()
     from_row, from_col = data['from']
     to_row, to_col = data['to']
@@ -69,7 +68,7 @@ def move_piece():
     try:
         piece = board.grid[from_row][from_col]
         if piece == ' ':
-            return jsonify({'error': 'No piece at source position'}), 400
+            return jsonify({'error': 'No piece at source position'}), 405
 
         # Simulate move to check it doesn't leave own king in check
         test_board = copy.deepcopy(board)
@@ -78,16 +77,16 @@ def move_piece():
         try:
             test_piece.move((from_row, from_col), (to_row, to_col), test_board, last_move)
         except RuntimeError:
-            return jsonify({'error': 'Invalid move'}), 400
+            return jsonify({'error': 'Invalid move'}), 401
         except NotImplementedError as e:
-            return jsonify({'error': f'Not yet implemented: {str(e)}'}), 400
-
+            return jsonify({'error': f'Not yet implemented: {str(e)}'}), 402
+        
         if is_in_check(test_board, piece.color, last_move):
-            return jsonify({'error': 'Move would leave your king in check'}), 400
+            return jsonify({'error': 'Move would leave your king in check'}), 403
 
         target = board.grid[to_row][to_col]
         if target != ' ' and target.name == 'King':
-            return jsonify({'error': 'Cannot capture the king'}), 400
+            return jsonify({'error': 'Cannot capture the king'}), 404
 
         # Promotion
         if isinstance(piece, Pawn) and (to_row == 7 or to_row == 0):
@@ -95,7 +94,7 @@ def move_piece():
             piece.history.append(((from_row, from_col), (to_row, to_col)))
             last_move = (piece, (from_row, from_col), (to_row, to_col))
             pending_promotion = (to_row, to_col, piece.color)
-            return jsonify({'promotion': True, 'row': to_row, 'col': to_col, 'board': board.display(), 'color' : piece.color})
+            return jsonify({'promotion': True, 'row': to_row, 'col': to_col, 'board': board.display()})
 
         if(isinstance(piece, Pawn) or board.grid[to_row][to_col] != ' '):
             last_pawn_move_or_capture = 0
@@ -119,7 +118,7 @@ def move_piece():
 
         print(board_to_fen())
         print(get_eval())
-
+        
         return jsonify({
             'board': board.display(),
             'check': in_check,
@@ -141,11 +140,10 @@ def get_eval_route():
 def get_eval():
     fen = board_to_fen()
     print(fen)
-    # stockfish = Stockfish(path=r"C:\Users\eman2\Documents\GitHub\Project\Game\stockfish\stockfish-windows-x86-64-avx2.exe")
+    stockfish = Stockfish(path=r"C:\Users\eman2\Documents\GitHub\Project\Game\stockfish\stockfish-windows-x86-64-avx2.exe")
     
-    # stockfish.set_fen_position(str(fen), do_validation = False)
-    # val = stockfish.get_evaluation()
-    val = 0
+    stockfish.set_fen_position(str(fen), do_validation = False)
+    val = stockfish.get_evaluation()
     return val
 
 def board_to_fen():
@@ -163,7 +161,7 @@ def board_to_fen():
                 fen_format += piece.fen
             else:
                 count_empty += 1
-
+    
         if(count_empty > 0):
             fen_format += str(count_empty)
         if(i > 0):
@@ -174,29 +172,38 @@ def board_to_fen():
     else:
         fen_format += " b "
 
-    ##TODO FIX ICONS SO COLORS AND POSITION ARE CONSISTENT WITH TERMINAL, BACKEND, AND HTML
     pot_w_rookl = board.grid[0][0].history if isinstance(board.grid[0][0], Rook) and board.grid[0][0].color == 'W' else None
     pot_w_king = board.grid[0][4].history if isinstance(board.grid[0][4], King) and board.grid[0][4].color == 'W' else None
     pot_w_rookr = board.grid[0][7].history if isinstance(board.grid[0][7], Rook) and board.grid[0][7].color == 'W' else None
 
-    if(pot_w_king is None or len(pot_w_king) > 0 or (pot_w_rookl is None and pot_w_rookr is None) or (len(pot_w_rookl) > 0 and len(pot_w_rookr) > 0)):
+    if (
+        pot_w_king is None or 
+        (pot_w_king is not None and len(pot_w_king) > 0) or 
+        (pot_w_rookl is None and pot_w_rookr is None) or 
+        (pot_w_rookl is not None and len(pot_w_rookl) > 0 and pot_w_rookr is not None and len(pot_w_rookr) > 0)
+    ):
         fen_format += "--"
     else:
-        if(pot_w_rookr is not None and len(pot_w_rookr) == 0):
+        if pot_w_rookr is not None and len(pot_w_rookr) == 0:
             fen_format += "K"
-        if(pot_w_rookl is not None and len(pot_w_rookl) == 0):
+        if pot_w_rookl is not None and len(pot_w_rookl) == 0:
             fen_format += "Q"
 
     pot_b_rookl = board.grid[7][0].history if isinstance(board.grid[7][0], Rook) and board.grid[7][0].color == 'B' else None
     pot_b_king = board.grid[7][4].history if isinstance(board.grid[7][4], King) and board.grid[7][4].color == 'B' else None
     pot_b_rookr = board.grid[7][7].history if isinstance(board.grid[7][7], Rook) and board.grid[7][7].color == 'B' else None
 
-    if(pot_b_king is None or len(pot_b_king) > 0 or (pot_b_rookl is None and pot_b_rookr is None) or (len(pot_b_rookl) > 0 and len(pot_b_rookr) > 0)):
+    if (
+        pot_b_king is None or 
+        (pot_b_king is not None and len(pot_b_king) > 0) or 
+        (pot_b_rookl is None and pot_b_rookr is None) or 
+        (pot_b_rookl is not None and len(pot_b_rookl) > 0 and pot_b_rookr is not None and len(pot_b_rookr) > 0)
+    ):
         fen_format += "--"
     else:
-        if(pot_b_rookr is not None and len(pot_b_rookr) == 0):
+        if pot_b_rookr is not None and len(pot_b_rookr) == 0:
             fen_format += "k"
-        if(pot_b_rookl is not None and len(pot_b_rookl) == 0):
+        if pot_b_rookl is not None and len(pot_b_rookl) == 0:
             fen_format += "q"
     
     fen_format += " "
