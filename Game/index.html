@@ -586,6 +586,7 @@
 
             const gridRow = perspective === 'W' ? (7 - rowIndex) : rowIndex;
             const fen = cell.fen;
+            // console.log(`Rendering cell at gridRow: ${gridRow}, colIndex: ${colIndex}, fen: ${fen}, color: ${cell.color}`);
             const pieceColor = cell.color;
 
             if (fen !== ' ') {
@@ -649,7 +650,7 @@
                 alert(data.error);
               } else if (data.promotion) {
                 renderBoth(data.board);
-                showPromotionPicker(pieceColor);
+                showPromotionPicker(data.color);
               } else {
                 currentTurn = currentTurn === 'W' ? 'B' : 'W';
                 renderBoth(data.board);
@@ -693,7 +694,7 @@
       }
 
       function showPromotionPicker(pieceColor) {
-        const pieces = pieceColor == 'B' ? ['Q', 'R', 'B', 'N'] : ['q', 'r', 'b', 'n'];
+        const pieces = pieceColor == 'W' ? ['Q', 'R', 'B', 'N'] : ['q', 'r', 'b', 'n'];
         const names  = { Q: 'queen', R: 'rook', B: 'bishop', N: 'knight' };
 
         const modal = document.getElementById('promotionModal');
@@ -705,8 +706,7 @@
           btn.className = 'promotion-btn';
 
           const img = document.createElement('img');
-          color = pieceColor == 'B' ? 'W' : 'B';
-          img.src = getPieceImage(fen, color);
+          img.src = getPieceImage(fen, pieceColor);
           img.style.width = '48px';
           img.style.height = '48px';
           btn.appendChild(img);

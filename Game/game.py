@@ -42,7 +42,6 @@ def setup():
     board.grid[7][7] = Rook("B")
     for i in range(8):
         board.grid[6][i] = Pawn("B")
-    board.grid[1][0] = Pawn("B")
 
     return board
 
@@ -96,7 +95,7 @@ def move_piece():
             piece.history.append(((from_row, from_col), (to_row, to_col)))
             last_move = (piece, (from_row, from_col), (to_row, to_col))
             pending_promotion = (to_row, to_col, piece.color)
-            return jsonify({'promotion': True, 'row': to_row, 'col': to_col, 'board': board.display()})
+            return jsonify({'promotion': True, 'row': to_row, 'col': to_col, 'board': board.display(), 'color' : piece.color})
 
         if(isinstance(piece, Pawn) or board.grid[to_row][to_col] != ' '):
             last_pawn_move_or_capture = 0
@@ -142,10 +141,11 @@ def get_eval_route():
 def get_eval():
     fen = board_to_fen()
     print(fen)
-    stockfish = Stockfish(path=r"C:\Users\eman2\Documents\GitHub\Project\Game\stockfish\stockfish-windows-x86-64-avx2.exe")
+    # stockfish = Stockfish(path=r"C:\Users\eman2\Documents\GitHub\Project\Game\stockfish\stockfish-windows-x86-64-avx2.exe")
     
-    stockfish.set_fen_position(str(fen), do_validation = False)
-    val = stockfish.get_evaluation()
+    # stockfish.set_fen_position(str(fen), do_validation = False)
+    # val = stockfish.get_evaluation()
+    val = 0
     return val
 
 def board_to_fen():
@@ -310,6 +310,6 @@ if __name__ == '__main__':
     app.run(host='0.0.0.0', port = 5000)
 
 ###TODO Issues
-# Choosing a piece for promotion doesn't update the board correctly in either the terminal or the html, still shows up as a pawn, and then it's still the piece
-# who promotes again turn
-# Image doesn't render properly for promotion
+#When taking with a capture, uses correct piece color for images, but when promoting regularly, uses opposite piece's colors
+#Issue is that it checks the cell's color without actually having the capture completed, so it takes the current piece color
+#(the opposite) rather than the color of piece that is capturing on that square
