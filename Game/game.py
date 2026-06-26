@@ -42,6 +42,7 @@ def setup():
     board.grid[7][7] = Rook("B")
     for i in range(8):
         board.grid[6][i] = Pawn("B")
+    board.grid[1][0] = Pawn("B")
 
     return board
 

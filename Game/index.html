@@ -414,6 +414,7 @@
 
     function getPieceImage(fen, color) {
       const key = color + fen;
+      console.log('Fetching image for:', key, '->', PIECE_IMAGES[key]);
       return PIECE_IMAGES[key] || null;
     }
 
@@ -577,6 +578,7 @@
         container.innerHTML = '';
         const rows = perspective === 'W' ? [...boardData].reverse() : boardData;
 
+        console.log("---------------NEW CALL RENDER BOARD--------------")
         rows.forEach((row, rowIndex) => {
           row.forEach((cell, colIndex) => {
             const cellDiv = document.createElement('div');
@@ -697,13 +699,14 @@
         const modal = document.getElementById('promotionModal');
         const options = document.getElementById('promotionOptions');
         options.innerHTML = '';
-
+        console.log("---------------NEW CALL PROMOTION--------------")
         pieces.forEach(fen => {
           const btn = document.createElement('button');
           btn.className = 'promotion-btn';
 
           const img = document.createElement('img');
-          img.src = getPieceImage(fen, pieceColor);
+          color = pieceColor == 'B' ? 'W' : 'B';
+          img.src = getPieceImage(fen, color);
           img.style.width = '48px';
           img.style.height = '48px';
           btn.appendChild(img);
@@ -714,13 +717,13 @@
             const res = await fetch('http://127.0.0.1:5000/api/promote', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ piece: names[icon] })
+              body: JSON.stringify({ piece: names[fen.toUpperCase()] })
             });
             const data = await res.json();
             if (data.error) {
               alert(data.error);
             } else {
-              currentTurn = currentTurn === 'W' ? 'W' : 'B';
+              currentTurn = currentTurn === 'W' ? 'B' : 'W';
               renderBoth(data.board);
               updateStatus(data);
               updateTurnIndicator();
