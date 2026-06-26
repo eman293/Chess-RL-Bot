@@ -59,6 +59,7 @@
       padding: 6px 16px;
       border-radius: 20px;
       background: #0f3460;
+      margin-left: -50px;
     }
 
     /* BOARDS */
@@ -96,6 +97,7 @@
     }
     .reset-container {
       margin-top: 24px;
+      margin-left: -50px;
     }
     .white { background-color: #f0d9b5; }
     .black { background-color: #b58863; }
@@ -256,6 +258,32 @@
       color: #eee;
       transition: all 0.2s;
     }
+
+    .eval-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      background: #16213e;
+      border: 2px solid #0f3460;
+      border-radius: 8px;
+      color: #eee;
+      width: 200px;
+      margin-left: -300px;
+    }
+
+    .eval-result {
+      font-size: 16px;
+      font-weight: bold;
+      color: #4fc3f7;
+      text-align: center;
+    }
+
+    h1 {
+      position: relative;
+      left: -25px; /* Moves the element 50px to the left */
+    }
     .color-btn.selected { border-color: #e94560; background: #e94560; }
   </style>
 </head>
@@ -272,6 +300,13 @@
     <div id="statusBar"></div>
     <div id="turnIndicator">White's turn</div>
     <div class="boards-container">
+      <!-- Evaluation Section -->
+      <div class="eval-wrapper">
+        <h2>Match Evaluation</h2>
+        <div id="evalResult" class="eval-result">Evaluation: N/A</div>
+      </div>
+    
+      <!-- Boards -->
       <div class="board-wrapper">
         <div class="board-label">♔ White</div>
         <div class="board" id="boardWhite"></div>
@@ -424,6 +459,26 @@
       document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
       document.getElementById('page-' + name).classList.add('active');
       event.target.classList.add('active');
+      updateEvaluation();
+    }
+
+    async function updateEvaluation() {
+      try {
+        const response = await fetch('http://127.0.0.1:5000/api/eval');
+        const data = await response.json();
+        if (data.evaluation) {
+          const evalResult = data.evaluation;
+          const evalText = evalResult.type === 'cp'
+            ? `Centipawns: ${evalResult.value}`
+            : `Mate in ${evalResult.value}`;
+          document.getElementById('evalResult').textContent = `Evaluation: ${evalText}`;
+        } else {
+          document.getElementById('evalResult').textContent = 'Evaluation: Error fetching evaluation';
+        }
+      } catch (error) {
+        console.error('Error fetching evaluation:', error);
+        document.getElementById('evalResult').textContent = 'Evaluation: Failed to fetch';
+      }
     }
     
 
@@ -667,6 +722,7 @@
       function renderBoth(boardData) {
         renderBoard(boardData, 'boardWhite', 'W');
         renderBoard(boardData, 'boardBlack', 'B');
+        updateEvaluation();
       }
 
       function updateTurnIndicator() {
