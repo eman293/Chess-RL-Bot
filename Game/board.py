@@ -8,16 +8,51 @@ class Board:
 
     def display(self):
         rows = []
-        for i in range(len(self.grid) - 1, -1, -1):
-            rows.append([row.icon if row != ' ' else ' ' for row in self.grid[i]])
-
         for i in range(len(self.grid)):
+            row = []
+            for piece in self.grid[i]:
+                if piece != ' ':
+                    row.append({'fen': piece.fen, 'color': piece.color})
+                else:
+                    row.append({'fen': ' ', 'color': None})
+            rows.append(row)
+
+        for i in range(len(self.grid) - 1, -1, -1):
             print('|'.join(row.icon if row != ' ' else ' ' for row in self.grid[i]))
 
-        for i in range(len(self.grid)):
+        for i in range(len(self.grid) - 1, -1, -1):
             print('|'.join(row.color if row != ' ' else ' ' for row in self.grid[i]))
         
         return rows
+
+    # def display(self):
+        # rows = []
+        # for i in range(len(self.grid)):
+        #     row = []
+        #     for piece in self.grid[i]:
+        #         if piece != ' ':
+        #             row.append({'icon': piece.icon, 'color': piece.color})
+        #         else:
+        #             row.append({'icon': ' ', 'color': None})
+        #     rows.append(row)
+
+    #     # Terminal print
+    #     WHITE = '\033[97m'
+    #     BLACK = '\033[30m'
+    #     RESET = '\033[0m'
+    #     BG    = '\033[47m'
+
+    #     for i in range(len(self.grid)):
+    #         row_str = ''
+    #         for cell in self.grid[i]:
+    #             if cell != ' ':
+    #                 color = WHITE if cell.color == 'W' else BLACK
+    #                 row_str += f'{BG}{color}{cell.color}{cell.icon}{RESET} '
+    #             else:
+    #                 row_str += '.. '
+    #         print(row_str)
+
+    #     return rows
 
     #returns a tuple of {bool, string, string} = {isPresent, color, name}
     def piece_present(self, x, y):

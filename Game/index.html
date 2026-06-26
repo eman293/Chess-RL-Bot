@@ -397,6 +397,26 @@
   </div>
 
   <script>
+    const PIECE_IMAGES = {
+      'WK': 'static/pieces/wK.svg',
+      'WQ': 'static/pieces/wQ.svg',
+      'WR': 'static/pieces/wR.svg',
+      'WB': 'static/pieces/wB.svg',
+      'WN': 'static/pieces/wN.svg',
+      'WP': 'static/pieces/wP.svg',
+      'Bk': 'static/pieces/bK.svg',
+      'Bq': 'static/pieces/bQ.svg',
+      'Br': 'static/pieces/bR.svg',
+      'Bb': 'static/pieces/bB.svg',
+      'Bn': 'static/pieces/bN.svg',
+      'Bp': 'static/pieces/bP.svg',
+    };
+
+    function getPieceImage(fen, color) {
+      const key = color + fen;
+      return PIECE_IMAGES[key] || null;
+    }
+
     // ─── PAGE NAV ───────────────────────────────────────────────────────────
     function showPage(name) {
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -562,19 +582,24 @@
             const cellDiv = document.createElement('div');
             cellDiv.className = `cell ${((rowIndex + colIndex) % 2 === 0) ? 'white' : 'black'}`;
 
-            const gridRow = perspective === 'W' ? (rowIndex) : (7 - rowIndex);
+            const gridRow = perspective === 'W' ? (7 - rowIndex) : rowIndex;
+            const fen = cell.fen;
+            const pieceColor = cell.color;
 
-            if (cell !== ' ') {
-              cellDiv.textContent = cell;
-
-              const whitePieces = ['♚','♛','♜','♝','♞','♟'];
-              const blackPieces = ['♔','♕','♖','♗','♘','♙'];
-              const isWhitePiece = whitePieces.includes(cell);
-              const isBlackPiece = blackPieces.includes(cell);
+            if (fen !== ' ') {
+              const imgSrc = getPieceImage(fen, pieceColor);
+              if (imgSrc) {
+                const img = document.createElement('img');
+                img.src = imgSrc;
+                img.style.width = '46px';
+                img.style.height = '46px';
+                img.style.pointerEvents = 'none';  // so drag events hit the cell, not the img
+                cellDiv.appendChild(img);
+              }
 
               const canDrag =
-                (perspective === 'W' && isWhitePiece && currentTurn === 'W') ||
-                (perspective === 'B' && isBlackPiece && currentTurn === 'B');
+                (perspective === 'W' && pieceColor === 'W' && currentTurn === 'W') ||
+                (perspective === 'B' && pieceColor === 'B' && currentTurn === 'B');
 
               if (canDrag) {
                 cellDiv.draggable = true;
@@ -617,14 +642,12 @@
                 })
               });
 
-              //Call eval here to get new position evaluation
-
               const data = await res.json();
               if (data.error) {
                 alert(data.error);
               } else if (data.promotion) {
                 renderBoth(data.board);
-                showPromotionPicker(data.board[gridRow][colIndex]);
+                showPromotionPicker(pieceColor);
               } else {
                 currentTurn = currentTurn === 'W' ? 'B' : 'W';
                 renderBoth(data.board);
@@ -667,40 +690,44 @@
         }
       }
 
-      function showPromotionPicker(pawnIcon) {
-        const isWhite = pawnIcon === '♟';
-        const pieces = isWhite
-          ? { queen: '♛', rook: '♜', bishop: '♝', knight: '♞' } 
-          : { queen: '♕', rook: '♖', bishop: '♗', knight: '♘' };
+      function showPromotionPicker(pieceColor) {
+        const pieces = pieceColor == 'B' ? ['Q', 'R', 'B', 'N'] : ['q', 'r', 'b', 'n'];
+        const names  = { Q: 'queen', R: 'rook', B: 'bishop', N: 'knight' };
 
         const modal = document.getElementById('promotionModal');
         const options = document.getElementById('promotionOptions');
         options.innerHTML = '';
 
-        for (const [name, icon] of Object.entries(pieces)) {
+        pieces.forEach(fen => {
           const btn = document.createElement('button');
           btn.className = 'promotion-btn';
-          btn.textContent = icon;
-          btn.title = name;
+
+          const img = document.createElement('img');
+          img.src = getPieceImage(fen, pieceColor);
+          img.style.width = '48px';
+          img.style.height = '48px';
+          btn.appendChild(img);
+          btn.title = names[fen.toUpperCase()];
+
           btn.addEventListener('click', async () => {
             modal.classList.remove('active');
             const res = await fetch('http://127.0.0.1:5000/api/promote', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ piece: name })
+              body: JSON.stringify({ piece: names[icon] })
             });
             const data = await res.json();
             if (data.error) {
               alert(data.error);
             } else {
-              currentTurn = currentTurn === 'W' ? 'B' : 'W';
+              currentTurn = currentTurn === 'W' ? 'W' : 'B';
               renderBoth(data.board);
               updateStatus(data);
               updateTurnIndicator();
             }
           });
           options.appendChild(btn);
-        }
+        });
 
         modal.classList.add('active');
       }
@@ -711,3 +738,5 @@
   </script>
 </body>
 </html>
+
+

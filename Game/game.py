@@ -304,4 +304,11 @@ def debug_grid():
 if __name__ == '__main__':
     setup()
     print(board_to_fen())
+    board.display()
+    print(get_eval())
     app.run(host='0.0.0.0', port = 5000)
+
+###TODO Issues
+# Choosing a piece for promotion doesn't update the board correctly in either the terminal or the html, still shows up as a pawn, and then it's still the piece
+# who promotes again turn
+# Image doesn't render properly for promotion
