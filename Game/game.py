@@ -14,6 +14,7 @@ last_move = None
 pending_promotion = None
 last_pawn_move_or_capture = 0
 num_moves_total = 1  
+stockfish = None
 
 def setup():
     global board
@@ -55,6 +56,8 @@ def reset_board():
     board = setup()
     last_move = None
     pending_promotion = None
+    last_pawn_move_or_capture = 0
+    num_moves_total = 1  
     return jsonify({'board': board.display()})
 
 
@@ -138,9 +141,9 @@ def get_eval_route():
     return jsonify({'evaluation': evaluation})
 
 def get_eval():
+    global stockfish
     fen = board_to_fen()
     print(fen)
-    stockfish = Stockfish(path=r"C:\Users\eman2\Documents\GitHub\Project\Game\stockfish\stockfish-windows-x86-64-avx2.exe")
     
     stockfish.set_fen_position(str(fen), do_validation = False)
     val = stockfish.get_evaluation()
@@ -311,6 +314,8 @@ def debug_grid():
 
 if __name__ == '__main__':
     setup()
+    stockfish = Stockfish(path=r"C:\Users\eman2\Documents\GitHub\Project\Game\stockfish\stockfish-windows-x86-64-avx2.exe")
+    stockfish.set_depth(15)
     print(board_to_fen())
     board.display()
     print(get_eval())
