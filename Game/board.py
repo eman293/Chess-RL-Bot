@@ -25,35 +25,6 @@ class Board:
         
         return rows
 
-    # def display(self):
-        # rows = []
-        # for i in range(len(self.grid)):
-        #     row = []
-        #     for piece in self.grid[i]:
-        #         if piece != ' ':
-        #             row.append({'icon': piece.icon, 'color': piece.color})
-        #         else:
-        #             row.append({'icon': ' ', 'color': None})
-        #     rows.append(row)
-
-    #     # Terminal print
-    #     WHITE = '\033[97m'
-    #     BLACK = '\033[30m'
-    #     RESET = '\033[0m'
-    #     BG    = '\033[47m'
-
-    #     for i in range(len(self.grid)):
-    #         row_str = ''
-    #         for cell in self.grid[i]:
-    #             if cell != ' ':
-    #                 color = WHITE if cell.color == 'W' else BLACK
-    #                 row_str += f'{BG}{color}{cell.color}{cell.icon}{RESET} '
-    #             else:
-    #                 row_str += '.. '
-    #         print(row_str)
-
-    #     return rows
-
     #returns a tuple of {bool, string, string} = {isPresent, color, name}
     def piece_present(self, x, y):
         try:

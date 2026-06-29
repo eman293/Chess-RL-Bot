@@ -94,7 +94,7 @@ def move_piece():
             piece.history.append(((from_row, from_col), (to_row, to_col)))
             last_move = (piece, (from_row, from_col), (to_row, to_col))
             pending_promotion = (to_row, to_col, piece.color)
-            return jsonify({'promotion': True, 'row': to_row, 'col': to_col, 'board': board.display()})
+            return jsonify({'promotion': True, 'row': to_row, 'col': to_col, 'board': board.display(), 'color' : piece.color})
 
         if(isinstance(piece, Pawn) or board.grid[to_row][to_col] != ' '):
             last_pawn_move_or_capture = 0
@@ -315,8 +315,3 @@ if __name__ == '__main__':
     board.display()
     print(get_eval())
     app.run(host='0.0.0.0', port = 5000)
-
-###TODO Issues
-#When taking with a capture, uses correct piece color for images, but when promoting regularly, uses opposite piece's colors
-#Issue is that it checks the cell's color without actually having the capture completed, so it takes the current piece color
-#(the opposite) rather than the color of piece that is capturing on that square
