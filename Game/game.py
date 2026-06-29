@@ -52,12 +52,13 @@ def get_board():
 
 @app.route('/api/reset', methods=['POST'])
 def reset_board():
-    global board, last_move, pending_promotion
+    global board, last_move, pending_promotion, last_pawn_move_or_capture, num_moves_total
     board = setup()
     last_move = None
     pending_promotion = None
     last_pawn_move_or_capture = 0
     num_moves_total = 1  
+    # print(f"RESET CALLED - num_moves_total is now {num_moves_total}")
     return jsonify({'board': board.display()})
 
 
@@ -105,6 +106,7 @@ def move_piece():
             last_pawn_move_or_capture += 1
 
         num_moves_total += 1
+        print(f"MOVE - num_moves_total is now {num_moves_total}")
 
         # Normal move
         piece.move((from_row, from_col), (to_row, to_col), board, last_move)
@@ -139,6 +141,11 @@ def move_piece():
 def get_eval_route():
     evaluation = get_eval()
     return jsonify({'evaluation': evaluation})
+
+@app.route('/debug/moves')
+def debug_moves():
+    global num_moves_total
+    return jsonify({'num_moves_total': num_moves_total})
 
 def get_eval():
     global stockfish
