@@ -57,6 +57,7 @@ import math
 import random
 import threading
 from collections import deque
+import signal
 
 import torch
 import torch.nn as nn
@@ -691,6 +692,13 @@ class TrainingManager:
 # material/check reward terms only) just to validate the pipeline.
 # ─────────────────────────────────────────────────────────────────────────
 
+def save_model_on_exit(agent, save_path):
+    """Save the model when the program exits."""
+    print(f"\nSaving model to {save_path}...")
+    agent.save(save_path)
+    print("Model saved successfully. Exiting...")
+    sys.exit(0)
+
 if __name__ == '__main__':
     save_path = "saved_model.pth"
     agent = ChessQLearningAgent(color='W', epsilon=1.0, epsilon_min=0.1,
@@ -700,19 +708,27 @@ if __name__ == '__main__':
         agent.load(save_path)
     else:
         print("No saved model found. Starting fresh training...")
-        
+
     sf = Stockfish(path=r"C:\Users\eman2\Documents\GitHub\Project\Game\stockfish\stockfish-windows-x86-64-avx2.exe")
     sf.set_depth(15)
-    for ep in range(1, 5):
-        outcome, reward = run_episode(agent, stockfish=sf, opponent_color='B',
-                                       max_plies=40, use_eval=False)
-        loss = agent.train_step()
-        agent.decay_epsilon()
-        print(f"episode {ep}: outcome={outcome} reward={reward:.2f} "
-              f"epsilon={agent.epsilon:.3f} loss={loss}")
 
-    print(f"Saving model to {save_path}...")
-    agent.save(save_path)
-    print("Model saved successfully.")
+    # Handle Ctrl+C gracefully
+    def handle_interrupt(signal, frame):
+        save_model_on_exit(agent, save_path)
+
+    signal.signal(signal.SIGINT, handle_interrupt)
+    ep = 0
+    try:
+        while(1):
+            outcome, reward = run_episode(agent, stockfish=sf, opponent_color='B',
+                                           max_plies=100, use_eval=True)
+            loss = agent.train_step()
+            agent.decay_epsilon()
+            print(f"episode {ep}: outcome={outcome} reward={reward:.2f} "
+                  f"epsilon={agent.epsilon:.3f} loss={loss}")
+            ep += 1
+    except KeyboardInterrupt:
+        # Save the model if Ctrl+C is pressed during training
+        save_model_on_exit(agent, save_path)
 
 #Glitches - king disappears/gets captured - should be illegal

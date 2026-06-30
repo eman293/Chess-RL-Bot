@@ -49,7 +49,7 @@ class Pawn(Piece):
                         and start_row + 1 == end_row
                         and abs(start_col - end_col) == 1):
                     # Normal capture
-                    if board.piece_present(end_row, end_col)[0]:
+                    if board.piece_present(end_row, end_col)[0] and board.piece_present(end_row, end_col)[1] != self.color and board.piece_present(end_row, end_col)[2] != "King":
                         board.capture(start_row, start_col, end_row, end_col)
                         self.history.append((start_pos, end_pos))
                         return True
@@ -93,7 +93,7 @@ class Pawn(Piece):
                         and start_row - 1 == end_row
                         and abs(start_col - end_col) == 1):
                     # Normal capture
-                    if board.piece_present(end_row, end_col)[0]:
+                    if board.piece_present(end_row, end_col)[0] and board.piece_present(end_row, end_col)[1] != self.color and board.piece_present(end_row, end_col)[2] != "King":
                         board.capture(start_row, start_col, end_row, end_col)
                         self.history.append((start_pos, end_pos))
                         return True
@@ -132,7 +132,7 @@ class Knight(Piece):
                     board.update(start_row, start_col, end_row, end_col)
                     self.history.append((start_pos, end_pos))
                     return True
-                elif(board.piece_present(end_row, end_col)[1] != self.color):
+                elif(board.piece_present(end_row, end_col)[1] != self.color and board.piece_present(end_row, end_col)[2] != "King"):
                     board.capture(start_row, start_col, end_row, end_col)
                     self.history.append((start_pos, end_pos))
                     return True
@@ -170,7 +170,7 @@ class Rook(Piece):
             board.update(start_row, start_col, end_row, end_col)
             self.history.append((start_pos, end_pos))
             return True
-        elif board.piece_present(end_row, end_col)[1] != self.color:
+        elif board.piece_present(end_row, end_col)[1] != self.color and board.piece_present(end_row, end_col)[2] != "King":
             board.capture(start_row, start_col, end_row, end_col)
             self.history.append((start_pos, end_pos))
             return True
@@ -202,7 +202,7 @@ class Bishop(Piece):
             board.update(start_row, start_col, end_row, end_col)
             self.history.append((start_pos, end_pos))
             return True
-        elif board.piece_present(end_row, end_col)[1] != self.color:
+        elif board.piece_present(end_row, end_col)[1] != self.color and board.piece_present(end_row, end_col)[2] != "King":
             board.capture(start_row, start_col, end_row, end_col)
             self.history.append((start_pos, end_pos))
             return True
@@ -244,7 +244,7 @@ class Queen(Piece):
             board.update(start_row, start_col, end_row, end_col)
             self.history.append((start_pos, end_pos))
             return True
-        elif board.piece_present(end_row, end_col)[1] != self.color:
+        elif board.piece_present(end_row, end_col)[1] != self.color and board.piece_present(end_row, end_col)[2] != "King":
             board.capture(start_row, start_col, end_row, end_col)
             self.history.append((start_pos, end_pos))
             return True
@@ -296,6 +296,16 @@ class King(Piece):
 
             raise RuntimeError("Invalid Move")
 
+        for dr in (-1, 0, 1):
+            for dc in (-1, 0, 1):
+                if dr == 0 and dc == 0:
+                    continue
+                adj_row, adj_col = end_row + dr, end_col + dc
+                if InBounds(adj_row, adj_col):
+                    adjacent_piece = board.grid[adj_row][adj_col]
+                    if adjacent_piece != ' ' and adjacent_piece.name == "King" and adjacent_piece.color != self.color:
+                        raise RuntimeError("Invalid Move: King cannot move adjacent to the opposing king")
+
         # Normal move
         if (InBounds(end_row, end_col)
                 and abs(start_row - end_row) <= 1
@@ -304,7 +314,7 @@ class King(Piece):
                 board.update(start_row, start_col, end_row, end_col)
                 self.history.append((start_pos, end_pos))
                 return True
-            elif board.piece_present(end_row, end_col)[1] != self.color:
+            elif board.piece_present(end_row, end_col)[1] != self.color and board.piece_present(end_row, end_col)[2] != "King":
                 board.capture(start_row, start_col, end_row, end_col)
                 self.history.append((start_pos, end_pos))
                 return True
