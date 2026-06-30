@@ -1,3 +1,7 @@
+import copy
+from board import is_in_check
+
+
 def InBounds(x1, y1):
     return (0 <= x1 < 8) and (0 <= y1 < 8)
 
@@ -26,6 +30,12 @@ class Pawn(Piece):
     def move(self, start_pos, end_pos, board, last_move=None):
         start_row, start_col = start_pos
         end_row, end_col = end_pos
+
+        test_board = copy.deepcopy(board)
+        test_piece = test_board.grid[start_row][start_col]
+        test_board.update(start_row, start_col, end_row, end_col)
+        if is_in_check(test_board, self.color, last_move):
+            raise RuntimeError("Invalid Move, leaves king in check")
 
         if self.color == "W":
             if start_col == end_col:
@@ -126,6 +136,12 @@ class Knight(Piece):
         start_row, start_col = start_pos
         end_row, end_col = end_pos
 
+        test_board = copy.deepcopy(board)
+        test_piece = test_board.grid[start_row][start_col]
+        test_board.update(start_row, start_col, end_row, end_col)
+        if is_in_check(test_board, self.color, last_move):
+            raise RuntimeError("Invalid Move, leaves king in check")
+
         if((InBounds(end_row, end_col) and ((abs(start_row - end_row) == 2 and abs(start_col - end_col) == 1) 
             or (abs(start_row - end_row) == 1 and abs(start_col - end_col) == 2)))):
                 if(board.piece_present(end_row, end_col)[0] == False):
@@ -156,6 +172,12 @@ class Rook(Piece):
 
         if not (InBounds(end_row, end_col) and (start_row == end_row or start_col == end_col)):
             raise RuntimeError("Invalid Move")
+
+        test_board = copy.deepcopy(board)
+        test_piece = test_board.grid[start_row][start_col]
+        test_board.update(start_row, start_col, end_row, end_col)
+        if is_in_check(test_board, self.color, last_move):
+            raise RuntimeError("Invalid Move, leaves king in check")
 
         if start_row == end_row:
             for i in range(1, abs(start_col - end_col)):
@@ -191,6 +213,12 @@ class Bishop(Piece):
         if not (InBounds(end_row, end_col) and abs(start_row - end_row) == abs(start_col - end_col) and abs(start_row - end_row) > 0):
             raise RuntimeError("Invalid Move")
 
+        test_board = copy.deepcopy(board)
+        test_piece = test_board.grid[start_row][start_col]
+        test_board.update(start_row, start_col, end_row, end_col)
+        if is_in_check(test_board, self.color, last_move):
+            raise RuntimeError("Invalid Move, leaves king in check")
+
         for i in range(1, abs(start_row - end_row)):
             if board.piece_present(
                 start_row + (i * (1 if end_row > start_row else -1)),
@@ -223,6 +251,12 @@ class Queen(Piece):
 
         if not (InBounds(end_row, end_col) and (start_row == end_row or start_col == end_col or abs(start_row - end_row) == abs(start_col - end_col))):
             raise RuntimeError("Invalid Move")
+
+        test_board = copy.deepcopy(board)
+        test_piece = test_board.grid[start_row][start_col]
+        test_board.update(start_row, start_col, end_row, end_col)
+        if is_in_check(test_board, self.color, last_move):
+            raise RuntimeError("Invalid Move, leaves king in check")
 
         if start_row == end_row:
             for i in range(1, abs(start_col - end_col)):
@@ -261,6 +295,12 @@ class King(Piece):
     def move(self, start_pos, end_pos, board, last_move=None):
         start_row, start_col = start_pos
         end_row, end_col = end_pos
+
+        test_board = copy.deepcopy(board)
+        test_piece = test_board.grid[start_row][start_col]
+        test_board.update(start_row, start_col, end_row, end_col)
+        if is_in_check(test_board, self.color, last_move):
+            raise RuntimeError("Invalid Move, leaves king in check")
 
         # Castling
         if (start_col == 4 and end_col in (2, 6)

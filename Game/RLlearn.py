@@ -58,6 +58,7 @@ import random
 import threading
 from collections import deque
 import signal
+import sys
 
 import torch
 import torch.nn as nn
@@ -319,6 +320,7 @@ def get_stockfish_eval(stockfish, board, color, last_move=None):
         return None
     if result['type'] == 'cp':
         return float(result['value'])
+
     return 10000.0 if result['value'] > 0 else -10000.0
 
 
@@ -366,7 +368,7 @@ class ReplayBuffer:
 class ChessQLearningAgent:
     def __init__(self, color='W', lr=1e-3, gamma=0.99, epsilon=1.0,
                  epsilon_min=0.05, epsilon_decay=0.995, batch_size=64,
-                 buffer_size=20000, win_reward=20.0, draw_reward=2.0,
+                 buffer_size=20000, win_reward=20, draw_reward=-10,
                  loss_reward=-20.0, check_bonus=0.5, check_penalty=0.5,
                  material_weight=1.0, eval_weight=0.3, device=None):
         self.color = color
@@ -494,8 +496,8 @@ def run_episode(agent, stockfish, opponent_color, max_plies=120, use_eval=True):
     outcome = 'draw'
 
     for _ in range(max_plies):
-        # board.display()
-        # print("====================================")
+        board.display()
+        print("====================================")
         legal = get_legal_moves(board, agent.color, last_move)
         if not legal:
             if is_in_check(board, agent.color, last_move):
@@ -667,6 +669,7 @@ class TrainingManager:
                 self.stats['win_rate'] = self.wins / self.games
                 self.stats['avg_reward'] = sum(self.reward_history) / len(self.reward_history)
                 self.stats['epsilon'] = self.agent.epsilon
+                print(self.stats)
 
             if save_path and ep % save_interval == 0:
                 self.agent.save(save_path)
@@ -712,23 +715,33 @@ if __name__ == '__main__':
     sf = Stockfish(path=r"C:\Users\eman2\Documents\GitHub\Project\Game\stockfish\stockfish-windows-x86-64-avx2.exe")
     sf.set_depth(15)
 
-    # Handle Ctrl+C gracefully
+    ep = 0
+    block = False
+
     def handle_interrupt(signal, frame):
         save_model_on_exit(agent, save_path)
+        block = True
 
     signal.signal(signal.SIGINT, handle_interrupt)
-    ep = 0
+
+    # while(not block):
     try:
-        while(1):
-            outcome, reward = run_episode(agent, stockfish=sf, opponent_color='B',
-                                           max_plies=100, use_eval=True)
-            loss = agent.train_step()
-            agent.decay_epsilon()
-            print(f"episode {ep}: outcome={outcome} reward={reward:.2f} "
-                  f"epsilon={agent.epsilon:.3f} loss={loss}")
-            ep += 1
+        outcome, reward = run_episode(agent, stockfish=sf, opponent_color='B',
+                                        max_plies=100, use_eval=True)
+        loss = agent.train_step()
+        agent.decay_epsilon()
+        print(f"episode {ep}: outcome={outcome} reward={reward:.2f} "
+                f"epsilon={agent.epsilon:.3f} loss={loss}")
+        ep += 1
+        if(ep % 20 == 0):
+            agent.save(save_path)
     except KeyboardInterrupt:
-        # Save the model if Ctrl+C is pressed during training
+        block = True
         save_model_on_exit(agent, save_path)
+        
 
 #Glitches - king disappears/gets captured - should be illegal
+#King is able to move into check/doesn't check if moving to a spot/piece it's capturing brings it into check - should be illegal
+#If in check, I can still move a piece that doesn't get me out of check - should be illegal
+#Promotion not working correctly - should not always auto promote to queen - see what makes sense
+#Sometimes says draw when it's a checkmate loss

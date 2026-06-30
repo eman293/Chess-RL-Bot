@@ -121,8 +121,8 @@ def move_piece():
         checkmate = in_check and is_in_checkmate(board, opponent, last_move)
         stalemate = not in_check and is_stalemate(board, opponent, last_move)
 
-        print(board_to_fen())
-        print(get_eval())
+        # print(board_to_fen())
+        # print(get_eval())
         
         return jsonify({
             'board': board.display(),
@@ -149,12 +149,12 @@ def debug_moves():
 
 def get_eval():
     global stockfish
-    fen = board_to_fen()
-    print(fen)
+    # fen = board_to_fen()
+    # print(fen)
     
-    stockfish.set_fen_position(str(fen), do_validation = False)
-    val = stockfish.get_evaluation()
-    return val
+    # stockfish.set_fen_position(str(fen), do_validation = False)
+    # val = stockfish.get_evaluation()
+    return 0
 
 def board_to_fen():
     global board, last_move, last_pawn_move_or_capture, num_moves_total
