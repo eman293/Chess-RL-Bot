@@ -81,14 +81,14 @@ def is_in_check(board, color, last_move=None):
             if piece.name == 'Pawn':
                 attack_row = r + (1 if piece.color == 'W' else -1)
                 if attack_row == king_row and abs(c - king_col) == 1:
-                    print(f"Pawn at ({r},{c}) color={piece.color} threatens {color} king at {king_pos}")
+                    # print(f"Pawn at ({r},{c}) color={piece.color} threatens {color} king at {king_pos}")
                     return True
             else:
                 try:
                     test_board = copy.deepcopy(board)
                     test_piece = test_board.grid[r][c]
                     test_piece.move((r, c), king_pos, test_board, last_move)
-                    print(f"{piece.name} at ({r},{c}) color={piece.color} threatens {color} king at {king_pos}")
+                    # print(f"{piece.name} at ({r},{c}) color={piece.color} threatens {color} king at {king_pos}")
                     return True
                 except:
                     pass

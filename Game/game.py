@@ -106,7 +106,7 @@ def move_piece():
             last_pawn_move_or_capture += 1
 
         num_moves_total += 1
-        print(f"MOVE - num_moves_total is now {num_moves_total}")
+        # print(f"MOVE - num_moves_total is now {num_moves_total}")
 
         # Normal move
         piece.move((from_row, from_col), (to_row, to_col), board, last_move)
