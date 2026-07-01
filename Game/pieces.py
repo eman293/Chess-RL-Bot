@@ -1,7 +1,3 @@
-import copy
-from board import is_in_check
-
-
 def InBounds(x1, y1):
     return (0 <= x1 < 8) and (0 <= y1 < 8)
 
@@ -16,26 +12,19 @@ class Piece:
     def __str__(self):
         return f"{self.color} {self.name}"
 
-    #start_pos and end_pos are tuples of (row, col)
     def move(self, start_pos, end_pos, board, last_move=None):
         pass
 
 class Pawn(Piece):
     def __init__(self, color):
         if color == 'W':
-            super().__init__("Pawn", color, chr(0x265F), 'P') 
+            super().__init__("Pawn", color, chr(0x265F), 'P')
         else:
-            super().__init__("Pawn", color, chr(0x2659), 'p')  
+            super().__init__("Pawn", color, chr(0x2659), 'p')
 
     def move(self, start_pos, end_pos, board, last_move=None):
         start_row, start_col = start_pos
         end_row, end_col = end_pos
-
-        test_board = copy.deepcopy(board)
-        test_piece = test_board.grid[start_row][start_col]
-        test_board.update(start_row, start_col, end_row, end_col)
-        if is_in_check(test_board, self.color, last_move):
-            raise RuntimeError("Invalid Move, leaves king in check")
 
         if self.color == "W":
             if start_col == end_col:
@@ -58,13 +47,11 @@ class Pawn(Piece):
                 if (InBounds(end_row, end_col)
                         and start_row + 1 == end_row
                         and abs(start_col - end_col) == 1):
-                    # Normal capture
-                    if board.piece_present(end_row, end_col)[0] and board.piece_present(end_row, end_col)[1] != self.color and board.piece_present(end_row, end_col)[2] != "King":
+                    if board.piece_present(end_row, end_col)[0] and board.piece_present(end_row, end_col)[1] != self.color:
                         board.capture(start_row, start_col, end_row, end_col)
                         self.history.append((start_pos, end_pos))
                         return True
-                    # En passant
-                    elif (last_move is not None):
+                    elif last_move is not None:
                         lm_piece, lm_start, lm_end = last_move
                         lm_start_row, lm_start_col = lm_start
                         lm_end_row, lm_end_col = lm_end
@@ -73,7 +60,7 @@ class Pawn(Piece):
                                 and lm_start_row == 6 and lm_end_row == 4
                                 and lm_end_col == end_col
                                 and lm_end_row == start_row):
-                            board.grid[start_row][end_col] = ' '  # remove captured pawn
+                            board.grid[start_row][end_col] = ' '
                             board.update(start_row, start_col, end_row, end_col)
                             self.history.append((start_pos, end_pos))
                             return True
@@ -102,13 +89,11 @@ class Pawn(Piece):
                 if (InBounds(end_row, end_col)
                         and start_row - 1 == end_row
                         and abs(start_col - end_col) == 1):
-                    # Normal capture
-                    if board.piece_present(end_row, end_col)[0] and board.piece_present(end_row, end_col)[1] != self.color and board.piece_present(end_row, end_col)[2] != "King":
+                    if board.piece_present(end_row, end_col)[0] and board.piece_present(end_row, end_col)[1] != self.color:
                         board.capture(start_row, start_col, end_row, end_col)
                         self.history.append((start_pos, end_pos))
                         return True
-                    # En passant
-                    elif (last_move is not None):
+                    elif last_move is not None:
                         lm_piece, lm_start, lm_end = last_move
                         lm_start_row, lm_start_col = lm_start
                         lm_end_row, lm_end_col = lm_end
@@ -117,7 +102,7 @@ class Pawn(Piece):
                                 and lm_start_row == 1 and lm_end_row == 3
                                 and lm_end_col == end_col
                                 and lm_end_row == start_row):
-                            board.grid[start_row][end_col] = ' '  # remove captured pawn
+                            board.grid[start_row][end_col] = ' '
                             board.update(start_row, start_col, end_row, end_col)
                             self.history.append((start_pos, end_pos))
                             return True
@@ -128,43 +113,35 @@ class Pawn(Piece):
 class Knight(Piece):
     def __init__(self, color):
         if color == 'W':
-            super().__init__("Knight", color, chr(0x265E), 'N')  
+            super().__init__("Knight", color, chr(0x265E), 'N')
         else:
-            super().__init__("Knight", color, chr(0x2658), 'n')  
+            super().__init__("Knight", color, chr(0x2658), 'n')
 
     def move(self, start_pos, end_pos, board, last_move=None):
         start_row, start_col = start_pos
         end_row, end_col = end_pos
 
-        test_board = copy.deepcopy(board)
-        test_piece = test_board.grid[start_row][start_col]
-        test_board.update(start_row, start_col, end_row, end_col)
-        if is_in_check(test_board, self.color, last_move):
-            raise RuntimeError("Invalid Move, leaves king in check")
-
-        if((InBounds(end_row, end_col) and ((abs(start_row - end_row) == 2 and abs(start_col - end_col) == 1) 
-            or (abs(start_row - end_row) == 1 and abs(start_col - end_col) == 2)))):
-                if(board.piece_present(end_row, end_col)[0] == False):
-                    board.update(start_row, start_col, end_row, end_col)
-                    self.history.append((start_pos, end_pos))
-                    return True
-                elif(board.piece_present(end_row, end_col)[1] != self.color and board.piece_present(end_row, end_col)[2] != "King"):
-                    board.capture(start_row, start_col, end_row, end_col)
-                    self.history.append((start_pos, end_pos))
-                    return True
-                else:
-                    raise RuntimeError("Invalid Move")
-                    return False
+        if (InBounds(end_row, end_col) and ((abs(start_row - end_row) == 2 and abs(start_col - end_col) == 1)
+            or (abs(start_row - end_row) == 1 and abs(start_col - end_col) == 2))):
+            if board.piece_present(end_row, end_col)[0] == False:
+                board.update(start_row, start_col, end_row, end_col)
+                self.history.append((start_pos, end_pos))
+                return True
+            elif board.piece_present(end_row, end_col)[1] != self.color:
+                board.capture(start_row, start_col, end_row, end_col)
+                self.history.append((start_pos, end_pos))
+                return True
+            else:
+                raise RuntimeError("Invalid Move")
         else:
             raise RuntimeError("Invalid Move")
-            return False
 
 class Rook(Piece):
     def __init__(self, color):
         if color == 'W':
-            super().__init__("Rook", color, chr(0x265C), 'R')  
+            super().__init__("Rook", color, chr(0x265C), 'R')
         else:
-            super().__init__("Rook", color, chr(0x2656), 'r')  
+            super().__init__("Rook", color, chr(0x2656), 'r')
 
     def move(self, start_pos, end_pos, board, last_move=None):
         start_row, start_col = start_pos
@@ -172,12 +149,6 @@ class Rook(Piece):
 
         if not (InBounds(end_row, end_col) and (start_row == end_row or start_col == end_col)):
             raise RuntimeError("Invalid Move")
-
-        test_board = copy.deepcopy(board)
-        test_piece = test_board.grid[start_row][start_col]
-        test_board.update(start_row, start_col, end_row, end_col)
-        if is_in_check(test_board, self.color, last_move):
-            raise RuntimeError("Invalid Move, leaves king in check")
 
         if start_row == end_row:
             for i in range(1, abs(start_col - end_col)):
@@ -192,7 +163,7 @@ class Rook(Piece):
             board.update(start_row, start_col, end_row, end_col)
             self.history.append((start_pos, end_pos))
             return True
-        elif board.piece_present(end_row, end_col)[1] != self.color and board.piece_present(end_row, end_col)[2] != "King":
+        elif board.piece_present(end_row, end_col)[1] != self.color:
             board.capture(start_row, start_col, end_row, end_col)
             self.history.append((start_pos, end_pos))
             return True
@@ -202,9 +173,9 @@ class Rook(Piece):
 class Bishop(Piece):
     def __init__(self, color):
         if color == 'W':
-            super().__init__("Bishop", color, chr(0x265D), 'B')  
+            super().__init__("Bishop", color, chr(0x265D), 'B')
         else:
-            super().__init__("Bishop", color, chr(0x2657), 'b') 
+            super().__init__("Bishop", color, chr(0x2657), 'b')
 
     def move(self, start_pos, end_pos, board, last_move=None):
         start_row, start_col = start_pos
@@ -212,12 +183,6 @@ class Bishop(Piece):
 
         if not (InBounds(end_row, end_col) and abs(start_row - end_row) == abs(start_col - end_col) and abs(start_row - end_row) > 0):
             raise RuntimeError("Invalid Move")
-
-        test_board = copy.deepcopy(board)
-        test_piece = test_board.grid[start_row][start_col]
-        test_board.update(start_row, start_col, end_row, end_col)
-        if is_in_check(test_board, self.color, last_move):
-            raise RuntimeError("Invalid Move, leaves king in check")
 
         for i in range(1, abs(start_row - end_row)):
             if board.piece_present(
@@ -230,20 +195,19 @@ class Bishop(Piece):
             board.update(start_row, start_col, end_row, end_col)
             self.history.append((start_pos, end_pos))
             return True
-        elif board.piece_present(end_row, end_col)[1] != self.color and board.piece_present(end_row, end_col)[2] != "King":
+        elif board.piece_present(end_row, end_col)[1] != self.color:
             board.capture(start_row, start_col, end_row, end_col)
             self.history.append((start_pos, end_pos))
             return True
         else:
             raise RuntimeError("Invalid Move")
 
-
 class Queen(Piece):
     def __init__(self, color):
         if color == 'W':
-            super().__init__("Queen", color, chr(0x265B), 'Q')  
+            super().__init__("Queen", color, chr(0x265B), 'Q')
         else:
-            super().__init__("Queen", color, chr(0x2655), 'q')  
+            super().__init__("Queen", color, chr(0x2655), 'q')
 
     def move(self, start_pos, end_pos, board, last_move=None):
         start_row, start_col = start_pos
@@ -251,12 +215,6 @@ class Queen(Piece):
 
         if not (InBounds(end_row, end_col) and (start_row == end_row or start_col == end_col or abs(start_row - end_row) == abs(start_col - end_col))):
             raise RuntimeError("Invalid Move")
-
-        test_board = copy.deepcopy(board)
-        test_piece = test_board.grid[start_row][start_col]
-        test_board.update(start_row, start_col, end_row, end_col)
-        if is_in_check(test_board, self.color, last_move):
-            raise RuntimeError("Invalid Move, leaves king in check")
 
         if start_row == end_row:
             for i in range(1, abs(start_col - end_col)):
@@ -278,7 +236,7 @@ class Queen(Piece):
             board.update(start_row, start_col, end_row, end_col)
             self.history.append((start_pos, end_pos))
             return True
-        elif board.piece_present(end_row, end_col)[1] != self.color and board.piece_present(end_row, end_col)[2] != "King":
+        elif board.piece_present(end_row, end_col)[1] != self.color:
             board.capture(start_row, start_col, end_row, end_col)
             self.history.append((start_pos, end_pos))
             return True
@@ -288,28 +246,20 @@ class Queen(Piece):
 class King(Piece):
     def __init__(self, color):
         if color == 'W':
-            super().__init__("King", color, chr(0x265A), 'K')  
+            super().__init__("King", color, chr(0x265A), 'K')
         else:
-            super().__init__("King", color, chr(0x2654), 'k')  
+            super().__init__("King", color, chr(0x2654), 'k')
 
     def move(self, start_pos, end_pos, board, last_move=None):
         start_row, start_col = start_pos
         end_row, end_col = end_pos
 
-        test_board = copy.deepcopy(board)
-        test_piece = test_board.grid[start_row][start_col]
-        test_board.update(start_row, start_col, end_row, end_col)
-        if is_in_check(test_board, self.color, last_move):
-            raise RuntimeError("Invalid Move, leaves king in check")
-
         # Castling
         if (start_col == 4 and end_col in (2, 6)
                 and start_row == end_row
-                and len(self.history) == 0):  # king has not moved
-
+                and len(self.history) == 0):
             row = start_row
-
-            if end_col == 6:  # Kingside
+            if end_col == 6:
                 rook = board.grid[row][7]
                 if (rook != ' ' and rook.name == 'Rook'
                         and len(rook.history) == 0
@@ -320,8 +270,7 @@ class King(Piece):
                     self.history.append((start_pos, end_pos))
                     rook.history.append(((row, 7), (row, 5)))
                     return True
-
-            elif end_col == 2:  # Queenside
+            elif end_col == 2:
                 rook = board.grid[row][0]
                 if (rook != ' ' and rook.name == 'Rook'
                         and len(rook.history) == 0
@@ -333,18 +282,18 @@ class King(Piece):
                     self.history.append((start_pos, end_pos))
                     rook.history.append(((row, 0), (row, 3)))
                     return True
-
             raise RuntimeError("Invalid Move")
 
+        # Prevent moving adjacent to the opposing king
         for dr in (-1, 0, 1):
             for dc in (-1, 0, 1):
                 if dr == 0 and dc == 0:
                     continue
                 adj_row, adj_col = end_row + dr, end_col + dc
                 if InBounds(adj_row, adj_col):
-                    adjacent_piece = board.grid[adj_row][adj_col]
-                    if adjacent_piece != ' ' and adjacent_piece.name == "King" and adjacent_piece.color != self.color:
-                        raise RuntimeError("Invalid Move: King cannot move adjacent to the opposing king")
+                    adj = board.grid[adj_row][adj_col]
+                    if adj != ' ' and adj.name == "King" and adj.color != self.color:
+                        raise RuntimeError("Invalid Move: adjacent to opposing king")
 
         # Normal move
         if (InBounds(end_row, end_col)
@@ -354,7 +303,7 @@ class King(Piece):
                 board.update(start_row, start_col, end_row, end_col)
                 self.history.append((start_pos, end_pos))
                 return True
-            elif board.piece_present(end_row, end_col)[1] != self.color and board.piece_present(end_row, end_col)[2] != "King":
+            elif board.piece_present(end_row, end_col)[1] != self.color:
                 board.capture(start_row, start_col, end_row, end_col)
                 self.history.append((start_pos, end_pos))
                 return True
@@ -362,4 +311,3 @@ class King(Piece):
                 raise RuntimeError("Invalid Move")
         else:
             raise RuntimeError("Invalid Move")
-        

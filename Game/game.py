@@ -5,9 +5,13 @@ from board import Board, is_in_check, is_in_checkmate, is_stalemate
 import copy
 import math
 from stockfish import Stockfish
+import os
+from flask import send_from_directory
+from rllearn import TrainingManager, get_legal_moves
 
 app = Flask(__name__)
 CORS(app)
+training_manager = TrainingManager()
 
 global board
 last_move = None  
@@ -45,6 +49,85 @@ def setup():
         board.grid[6][i] = Pawn("B")
 
     return board
+
+@app.route('/api/bot/upload', methods=['POST'])
+def bot_upload():
+    if 'model' not in request.files:
+        return jsonify({'error': 'No file provided'}), 400
+    file = request.files['model']
+    os.makedirs('models', exist_ok=True)
+    path = os.path.join('models', 'uploaded_model.pth')
+    file.save(path)
+    try:
+        training_manager.configure(color=request.form.get('color', 'B'))
+        training_manager.load_agent(path)
+        return jsonify({'message': 'Model loaded successfully'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+@app.route('/api/bot/move', methods=['GET'])
+def bot_move():
+    color = request.args.get('color', 'B')
+    if training_manager.agent is None:
+        return jsonify({'error': 'No model loaded'}), 400
+    try:
+        legal = get_legal_moves(board, color, last_move)
+        result = training_manager.agent.select_action(board, legal, training=False)
+        if result is None:
+            return jsonify({'error': 'No legal moves'}), 400
+        from_pos, to_pos, _ = result
+        return jsonify({'from': list(from_pos), 'to': list(to_pos)})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+@app.route('/api/bot/load', methods=['POST'])
+def bot_load():
+    data = request.get_json()
+    path = data.get('path', '')
+    color = data.get('color', 'B')
+    if not os.path.exists(path):
+        return jsonify({'error': f'File not found: {path}'}), 400
+    try:
+        training_manager.configure(color=color)
+        training_manager.load_agent(path)
+        return jsonify({'message': f'Model loaded from {path}'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+@app.route('/api/bot/train/start', methods=['POST'])
+def bot_train_start():
+    data = request.get_json()
+    training_manager.configure(
+        color=data.get('color', 'W'),
+        lr=data.get('learning_rate', 1e-3),
+        gamma=data.get('gamma', 0.99),
+        epsilon=data.get('epsilon', 1.0),
+        batch_size=data.get('batch_size', 64),
+        stockfish_path=r"C:\Users\eman2\Documents\GitHub\Project\Game\stockfish\stockfish-windows-x86-64-avx2.exe",
+    )
+    save_path = data.get('path', 'models/chess_bot.pth')
+    save_interval = data.get('save_interval', 100)
+    training_manager.start(data.get('episodes', 1000), save_path, save_interval)
+    return jsonify({'message': 'Training started'})
+
+@app.route('/api/bot/train/stop', methods=['POST'])
+def bot_train_stop():
+    training_manager.stop()
+    return jsonify({'message': 'Training stopped'})
+
+@app.route('/api/bot/save', methods=['POST'])
+def bot_save():
+    data = request.get_json()
+    path = data.get('path', 'models/chess_bot.pth')
+    try:
+        training_manager.save_agent(path)
+        return jsonify({'message': f'Model saved to {path}'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+@app.route('/api/bot/stats', methods=['GET'])
+def bot_stats():
+    return jsonify(training_manager.get_stats())
 
 @app.route('/api/board', methods=['GET'])
 def get_board():
@@ -121,8 +204,8 @@ def move_piece():
         checkmate = in_check and is_in_checkmate(board, opponent, last_move)
         stalemate = not in_check and is_stalemate(board, opponent, last_move)
 
-        # print(board_to_fen())
-        # print(get_eval())
+        print(board_to_fen())
+        print(get_eval())
         
         return jsonify({
             'board': board.display(),
@@ -149,12 +232,12 @@ def debug_moves():
 
 def get_eval():
     global stockfish
-    # fen = board_to_fen()
-    # print(fen)
+    fen = board_to_fen()
+    print(fen)
     
-    # stockfish.set_fen_position(str(fen), do_validation = False)
-    # val = stockfish.get_evaluation()
-    return 0
+    stockfish.set_fen_position(str(fen), do_validation = False)
+    val = stockfish.get_evaluation()
+    return val
 
 def board_to_fen():
     global board, last_move, last_pawn_move_or_capture, num_moves_total

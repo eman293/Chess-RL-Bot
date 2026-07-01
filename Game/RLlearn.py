@@ -738,10 +738,4 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         block = True
         save_model_on_exit(agent, save_path)
-        
-
-#Glitches - king disappears/gets captured - should be illegal
-#King is able to move into check/doesn't check if moving to a spot/piece it's capturing brings it into check - should be illegal
-#If in check, I can still move a piece that doesn't get me out of check - should be illegal
-#Promotion not working correctly - should not always auto promote to queen - see what makes sense
-#Sometimes says draw when it's a checkmate loss
+    

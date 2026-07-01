@@ -326,36 +326,43 @@
     <h1>RL Bot Configuration</h1>
     <div class="bot-container">
 
-      <!-- Model -->
-      <div class="bot-section">
-        <h3>Model</h3>
-        <div class="form-row">
-          <label>Algorithm</label>
-          <select id="botAlgorithm">
-            <option value="dqn">DQN</option>
-            <option value="ppo">PPO</option>
-            <option value="a3c">A3C</option>
-            <option value="alphazero">AlphaZero-style MCTS</option>
-          </select>
+      <!-- Model file row -->
+      <div class="form-row">
+        <label>Upload .pth model</label>
+        <input type="file" id="modelFile" accept=".pth"
+          style="background:#0f3460;border:1px solid #1a4a8a;border-radius:6px;color:#eee;padding:6px;width:200px;" />
+      </div>
+      <div class="form-row">
+        <label>or enter path</label>
+        <input type="text" id="modelPath" placeholder="models/chess_bot.pth" />
+      </div>
+      <div class="form-row">
+        <label>Play as</label>
+        <div class="color-selector">
+          <button class="color-btn selected" id="colorW" onclick="selectColor('W')">White</button>
+          <button class="color-btn" id="colorB" onclick="selectColor('B')">Black</button>
         </div>
-        <div class="form-row">
-          <label>Model file</label>
-          <input type="text" id="modelPath" placeholder="models/chess_bot.pt" />
+      </div>
+      <div class="form-row">
+        <label></label>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" onclick="uploadAndLoadBot()">Upload & Load</button>
+          <button class="btn btn-secondary" onclick="loadBot()">Load from Path</button>
+          <button class="btn btn-secondary" onclick="resetBot()">Reset</button>
         </div>
-        <div class="form-row">
-          <label>Play as</label>
-          <div class="color-selector">
-            <button class="color-btn selected" id="colorW" onclick="selectColor('W')">White</button>
-            <button class="color-btn" id="colorB" onclick="selectColor('B')">Black</button>
-          </div>
-        </div>
-        <div class="form-row">
-          <label></label>
-          <div style="display:flex;gap:8px">
-            <button class="btn btn-primary" onclick="loadBot()">Load Model</button>
-            <button class="btn btn-secondary" onclick="resetBot()">Reset</button>
-          </div>
-        </div>
+      </div>
+
+      <div id="botControls" style="margin-bottom:12px;display:flex;align-items:center;gap:12px;margin-left:-50px;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <input type="checkbox" id="botEnabled" style="width:16px;height:16px;" />
+          <span>Enable Bot</span>
+        </label>
+        <span style="color:#aaa;font-size:13px;">Bot plays as:</span>
+        <select id="botPlayColor" style="background:#0f3460;border:1px solid #1a4a8a;border-radius:6px;color:#eee;padding:4px 8px;">
+          <option value="B">Black</option>
+          <option value="W">White</option>
+        </select>
+        <span id="botIndicator" style="color:#4fc3f7;font-size:13px;"></span>
       </div>
 
       <!-- Training -->
@@ -446,6 +453,26 @@
       'Bn': 'static/pieces/bN.svg',
       'Bp': 'static/pieces/bP.svg',
     };
+
+    async function uploadAndLoadBot() {
+      const file = document.getElementById('modelFile').files[0];
+      if (!file) { setBotStatus('No file selected', 'error'); return; }
+      const formData = new FormData();
+      formData.append('model', file);
+      formData.append('color', botColor);
+      setBotStatus('Uploading model...', 'running');
+      try {
+        const res = await fetch('http://127.0.0.1:5000/api/bot/upload', {
+          method: 'POST', body: formData
+        });
+        const data = await res.json();
+        if (data.error) setBotStatus(data.error, 'error');
+        else {
+          setBotStatus(data.message, 'success');
+          document.getElementById('botPlayColor').value = botColor;
+        }
+      } catch { setBotStatus('Upload failed', 'error'); }
+    }
 
     function getPieceImage(fen, color) {
       const key = color + fen;
@@ -612,6 +639,7 @@
             renderBoth(data.board); // Re-render the board
             updateTurnIndicator(); // Update the turn indicator
             document.getElementById('statusBar').textContent = ''; // Clear the status bar
+            await maybeTriggerBotMove()
           } else if (data.error) {
             alert(data.error);
           }
@@ -626,6 +654,50 @@
       async function fetchBoard() {
         const res = await fetch('http://127.0.0.1:5000/api/board');
         return await res.json();
+      }
+
+      async function maybeTriggerBotMove() {
+        const enabled = document.getElementById('botEnabled').checked;
+        if (!enabled) return;
+        const botColor = document.getElementById('botPlayColor').value;
+        if (currentTurn !== botColor) return;
+
+        document.getElementById('botIndicator').textContent = 'Bot is thinking...';
+        try {
+          const moveRes = await fetch(`http://127.0.0.1:5000/api/bot/move?color=${botColor}`);
+          const moveData = await moveRes.json();
+          if (moveData.error) {
+            document.getElementById('botIndicator').textContent = `Bot error: ${moveData.error}`;
+            return;
+          }
+
+          const res = await fetch('http://127.0.0.1:5000/api/move', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ from: moveData.from, to: moveData.to })
+          });
+          const data = await res.json();
+          if (data.error) {
+            document.getElementById('botIndicator').textContent = `Bot move invalid: ${data.error}`;
+          } else if (data.promotion) {
+            // Bot always promotes to queen
+            await fetch('http://127.0.0.1:5000/api/promote', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ piece: 'queen' })
+            }).then(r => r.json()).then(d => { renderBoth(d.board); updateStatus(d); });
+            currentTurn = currentTurn === 'W' ? 'B' : 'W';
+            updateTurnIndicator();
+          } else {
+            currentTurn = currentTurn === 'W' ? 'B' : 'W';
+            renderBoth(data.board);
+            updateStatus(data);
+            updateTurnIndicator();
+          }
+          document.getElementById('botIndicator').textContent = '';
+        } catch (e) {
+          document.getElementById('botIndicator').textContent = 'Bot failed to move';
+        }
       }
 
       function renderBoard(boardData, containerId, perspective) {
@@ -711,6 +783,7 @@
                 renderBoth(data.board);
                 updateStatus(data);
                 updateTurnIndicator();
+                await maybeTriggerBotMove()
               }
             });
 
@@ -783,6 +856,7 @@
               renderBoth(data.board);
               updateStatus(data);
               updateTurnIndicator();
+              await maybeTriggerBotMove()
             }
           });
           options.appendChild(btn);
