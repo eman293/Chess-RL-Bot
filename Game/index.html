@@ -6,870 +6,428 @@
   <title>Chess</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: sans-serif;
-      background: #1a1a2e;
-      color: #eee;
-      min-height: 100vh;
-    }
+    body { font-family: sans-serif; background: #1a1a2e; color: #eee; min-height: 100vh; }
 
-    /* NAV */
-    nav {
-      display: flex;
-      gap: 8px;
-      padding: 16px 24px;
-      background: #16213e;
-      border-bottom: 2px solid #0f3460;
-    }
-    .nav-btn {
-      padding: 8px 20px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 15px;
-      background: #0f3460;
-      color: #eee;
-      transition: background 0.2s;
-    }
-    .nav-btn.active { background: #e94560; color: white; }
-    .nav-btn:hover:not(.active) { background: #1a4a8a; }
+    nav { display:flex; gap:8px; padding:16px 24px; background:#16213e; border-bottom:2px solid #0f3460; }
+    .nav-btn { padding:8px 20px; border:none; border-radius:6px; cursor:pointer; font-size:15px; background:#0f3460; color:#eee; transition:background .2s; }
+    .nav-btn.active { background:#e94560; color:white; }
+    .nav-btn:hover:not(.active) { background:#1a4a8a; }
 
-    /* PAGES */
-    .page { display: none; padding: 32px; }
-    .page.active { display: flex; flex-direction: column; align-items: center; }
+    .page { display:none; padding:32px; }
+    .page.active { display:flex; flex-direction:column; align-items:center; }
 
-    h1 { margin-bottom: 16px; font-size: 28px; }
-    h2 { margin-bottom: 16px; font-size: 22px; }
+    h1 { margin-bottom:16px; font-size:28px; }
+    h2 { margin-bottom:12px; font-size:20px; }
 
-    /* STATUS */
-    #statusBar {
-      font-size: 18px;
-      margin-bottom: 12px;
-      min-height: 28px;
-      color: #eee;
-    }
-    #statusBar.check { color: orange; font-weight: bold; }
-    #statusBar.checkmate { color: #e94560; font-weight: bold; }
-    #statusBar.stalemate { color: steelblue; font-weight: bold; }
+    #statusBar { font-size:18px; margin-bottom:8px; min-height:28px; }
+    #statusBar.check     { color:orange; font-weight:bold; }
+    #statusBar.checkmate { color:#e94560; font-weight:bold; }
+    #statusBar.stalemate { color:steelblue; font-weight:bold; }
 
-    /* TURN INDICATOR */
-    #turnIndicator {
-      font-size: 16px;
-      margin-bottom: 16px;
-      padding: 6px 16px;
-      border-radius: 20px;
-      background: #0f3460;
-      margin-left: -50px;
-    }
+    #turnIndicator { font-size:15px; margin-bottom:12px; padding:5px 14px; border-radius:20px; background:#0f3460; }
 
-    /* BOARDS */
-    .boards-container {
-      display: flex;
-      gap: 60px;
-      align-items: flex-start;
+    /* Bot panel — sits between status and boards */
+    .bot-panel {
+      display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+      background:#16213e; border:1px solid #0f3460; border-radius:8px;
+      padding:10px 18px; margin-bottom:16px; width:fit-content;
     }
-    .board-wrapper {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-    }
-    .board-label {
-      font-size: 18px;
-      font-weight: bold;
-    }
-    .board {
-      display: grid;
-      grid-template-columns: repeat(8, 56px);
-      grid-template-rows: repeat(8, 56px);
-      border: 3px solid #0f3460;
-      border-radius: 4px;
-      overflow: hidden;
-    }
-    .cell {
-      width: 56px;
-      height: 56px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 36px;
-      cursor: default;
-    }
-    .reset-container {
-      margin-top: 24px;
-      margin-left: -50px;
-    }
-    .white { background-color: #f0d9b5; }
-    .black { background-color: #b58863; }
-    .cell[draggable="true"] { cursor: grab; }
-    .drag-over { outline: 3px solid #4fc3f7; }
-    .dragging { opacity: 0.4; }
+    .bot-panel label { display:flex; align-items:center; gap:6px; cursor:pointer; font-size:14px; }
+    .bot-panel select { background:#0f3460; border:1px solid #1a4a8a; border-radius:5px; color:#eee; padding:4px 8px; font-size:13px; }
+    .bot-panel .btn-sm { padding:5px 14px; border:none; border-radius:6px; cursor:pointer; font-size:13px; }
+    .btn-sm.primary { background:#e94560; color:white; }
+    .btn-sm.secondary { background:#0f3460; color:#eee; }
+    .btn-sm.secondary:hover { background:#1a4a8a; }
+    #botIndicator { font-size:13px; color:#4fc3f7; min-width:120px; }
 
-    /* PROMOTION MODAL */
-    #promotionModal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.6);
-      align-items: center;
-      justify-content: center;
-      z-index: 10;
-    }
-    #promotionModal.active { display: flex; }
-    #promotionBox {
-      background: #16213e;
-      border: 2px solid #0f3460;
-      border-radius: 12px;
-      padding: 28px;
-      text-align: center;
-    }
-    #promotionBox h2 { margin-bottom: 16px; color: #eee; }
-    .promotion-options { display: flex; gap: 12px; justify-content: center; }
-    .promotion-btn {
-      font-size: 40px;
-      width: 68px;
-      height: 68px;
-      border: 2px solid #0f3460;
-      border-radius: 8px;
-      cursor: pointer;
-      background: #0f3460;
-      color: white;
-      transition: background 0.15s;
-    }
-    .promotion-btn:hover { background: #1a4a8a; }
+    .boards-container { display:flex; gap:60px; align-items:flex-start; }
+    .board-wrapper    { display:flex; flex-direction:column; align-items:center; gap:8px; }
+    .board-label      { font-size:18px; font-weight:bold; }
+    .board { display:grid; grid-template-columns:repeat(8,56px); grid-template-rows:repeat(8,56px); border:3px solid #0f3460; border-radius:4px; overflow:hidden; }
+    .cell  { width:56px; height:56px; display:flex; align-items:center; justify-content:center; }
+    .white { background-color:#f0d9b5; } .black { background-color:#b58863; }
+    .cell[draggable="true"] { cursor:grab; }
+    .drag-over { outline:3px solid #4fc3f7; }
+    .dragging  { opacity:.4; }
 
-    /* BOT PAGE */
-    .bot-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 24px;
-      width: 100%;
-      max-width: 600px;
-    }
-    .bot-section {
-      background: #16213e;
-      border: 1px solid #0f3460;
-      border-radius: 10px;
-      padding: 24px;
-      width: 100%;
-    }
-    .bot-section h3 {
-      margin-bottom: 16px;
-      font-size: 18px;
-      color: #4fc3f7;
-      border-bottom: 1px solid #0f3460;
-      padding-bottom: 8px;
-    }
-    .form-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 14px;
-      gap: 16px;
-    }
-    .form-row label { font-size: 15px; color: #ccc; }
-    .form-row input, .form-row select {
-      background: #0f3460;
-      border: 1px solid #1a4a8a;
-      border-radius: 6px;
-      color: #eee;
-      padding: 6px 12px;
-      font-size: 14px;
-      width: 200px;
-    }
-    .form-row input[type="range"] {
-      width: 160px;
-      accent-color: #e94560;
-    }
-    .range-value {
-      min-width: 32px;
-      text-align: right;
-      color: #e94560;
-      font-weight: bold;
-    }
-    .btn {
-      padding: 10px 28px;
-      border: none;
-      border-radius: 8px;
-      font-size: 15px;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    .btn-primary { background: #e94560; color: white; }
-    .btn-primary:hover { background: #c73652; }
-    .btn-secondary { background: #0f3460; color: #eee; }
-    .btn-secondary:hover { background: #1a4a8a; }
-    .btn-success { background: #2e7d32; color: white; }
-    .btn-success:hover { background: #1b5e20; }
+    .bottom-row { display:flex; gap:16px; align-items:center; margin-top:20px; }
+    .btn { padding:9px 22px; border:none; border-radius:8px; font-size:14px; cursor:pointer; }
+    .btn.secondary { background:#0f3460; color:#eee; }
+    .btn.secondary:hover { background:#1a4a8a; }
 
-    .bot-status {
-      padding: 12px 16px;
-      border-radius: 8px;
-      font-size: 14px;
-      background: #0f3460;
-      color: #ccc;
-      width: 100%;
-      min-height: 48px;
-    }
-    .bot-status.running { color: #4fc3f7; border-left: 3px solid #4fc3f7; }
-    .bot-status.success { color: #81c784; border-left: 3px solid #81c784; }
-    .bot-status.error { color: #e94560; border-left: 3px solid #e94560; }
+    /* Promotion modal */
+    #promotionModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); align-items:center; justify-content:center; z-index:10; }
+    #promotionModal.active { display:flex; }
+    #promotionBox { background:#16213e; border:2px solid #0f3460; border-radius:12px; padding:28px; text-align:center; }
+    #promotionBox h2 { margin-bottom:16px; }
+    .promotion-options { display:flex; gap:12px; justify-content:center; }
+    .promotion-btn { width:68px; height:68px; border:2px solid #0f3460; border-radius:8px; cursor:pointer; background:#0f3460; display:flex; align-items:center; justify-content:center; }
+    .promotion-btn:hover { background:#1a4a8a; }
 
-    .training-controls {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .stat-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-    .stat-box {
-      background: #0f3460;
-      border-radius: 8px;
-      padding: 12px;
-      text-align: center;
-    }
-    .stat-box .stat-value {
-      font-size: 24px;
-      font-weight: bold;
-      color: #4fc3f7;
-    }
-    .stat-box .stat-label {
-      font-size: 12px;
-      color: #aaa;
-      margin-top: 4px;
-    }
-
-    .color-selector {
-      display: flex;
-      gap: 10px;
-    }
-    .color-btn {
-      padding: 8px 20px;
-      border: 2px solid #0f3460;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
-      background: #0f3460;
-      color: #eee;
-      transition: all 0.2s;
-    }
-
-    .eval-wrapper {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-      padding: 16px;
-      background: #16213e;
-      border: 2px solid #0f3460;
-      border-radius: 8px;
-      color: #eee;
-      width: 200px;
-      margin-left: -300px;
-    }
-
-    .eval-result {
-      font-size: 16px;
-      font-weight: bold;
-      color: #4fc3f7;
-      text-align: center;
-    }
-
-    h1 {
-      position: relative;
-      left: -25px; /* Moves the element 50px to the left */
-    }
-    .color-btn.selected { border-color: #e94560; background: #e94560; }
+    /* Bot management page */
+    .bot-container { display:flex; flex-direction:column; gap:20px; width:100%; max-width:560px; }
+    .bot-section { background:#16213e; border:1px solid #0f3460; border-radius:10px; padding:22px; }
+    .bot-section h3 { margin-bottom:14px; font-size:17px; color:#4fc3f7; border-bottom:1px solid #0f3460; padding-bottom:8px; }
+    .form-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; gap:12px; }
+    .form-row label { font-size:14px; color:#ccc; }
+    .form-row input, .form-row select { background:#0f3460; border:1px solid #1a4a8a; border-radius:6px; color:#eee; padding:6px 10px; font-size:13px; width:220px; }
+    .form-row input[type=file] { padding:4px; }
+    .row-btns { display:flex; gap:8px; }
+    .btn-primary  { background:#e94560; color:white; border:none; border-radius:7px; padding:9px 22px; font-size:14px; cursor:pointer; }
+    .btn-primary:hover  { background:#c73652; }
+    .btn-secondary { background:#0f3460; color:#eee; border:none; border-radius:7px; padding:9px 22px; font-size:14px; cursor:pointer; }
+    .btn-secondary:hover { background:#1a4a8a; }
+    .bot-status { padding:10px 14px; border-radius:7px; font-size:13px; background:#0f3460; color:#ccc; margin-top:8px; min-height:40px; }
+    .bot-status.running { color:#4fc3f7; border-left:3px solid #4fc3f7; }
+    .bot-status.success { color:#81c784; border-left:3px solid #81c784; }
+    .bot-status.error   { color:#e94560; border-left:3px solid #e94560; }
+    .info-box { background:#0f3460; border-radius:8px; padding:14px; font-size:13px; color:#aaa; line-height:1.6; }
+    .info-box code { color:#4fc3f7; font-family:monospace; }
   </style>
 </head>
 <body>
 
-  <nav>
-    <button class="nav-btn active" onclick="showPage('game')">♟ Play</button>
-    <button class="nav-btn" onclick="showPage('bot')">🤖 RL Bot</button>
-  </nav>
+<nav>
+  <button class="nav-btn active" onclick="showPage('game',this)">♟ Play</button>
+  <button class="nav-btn" onclick="showPage('bot',this)">🤖 Bot</button>
+</nav>
 
-  <!-- GAME PAGE -->
-  <div class="page active" id="page-game">
-    <h1>Chess</h1>
-    <div id="statusBar"></div>
-    <div id="turnIndicator">White's turn</div>
-    <div class="boards-container">
-      <!-- Evaluation Section -->
-      <div class="eval-wrapper">
-        <h2>Match Evaluation</h2>
-        <div id="evalResult" class="eval-result">Evaluation: N/A</div>
-      </div>
-    
-      <!-- Boards -->
-      <div class="board-wrapper">
-        <div class="board-label">♔ White</div>
-        <div class="board" id="boardWhite"></div>
-      </div>
-      <div class="board-wrapper">
-        <div class="board-label">♚ Black</div>
-        <div class="board" id="boardBlack"></div>
-      </div>
+<!-- ── GAME PAGE ─────────────────────────────────────────────────────── -->
+<div class="page active" id="page-game">
+  <h1>Chess</h1>
+  <div id="statusBar"></div>
+  <div id="turnIndicator">White's turn</div>
+
+  <!-- Bot control panel -->
+  <div class="bot-panel">
+    <label><input type="checkbox" id="botEnabled" onchange="onBotToggle()"> Enable Bot</label>
+    <span style="font-size:13px;color:#aaa">plays as</span>
+    <select id="botPlayColor" onchange="onBotColorChange()">
+      <option value="B">Black</option>
+      <option value="W">White</option>
+    </select>
+    <button class="btn-sm secondary" onclick="showPage('bot', document.querySelectorAll('.nav-btn')[1])">⚙ Manage Model</button>
+    <span id="botIndicator"></span>
+  </div>
+
+  <div class="boards-container">
+    <div class="board-wrapper">
+      <div class="board-label">♔ White</div>
+      <div class="board" id="boardWhite"></div>
     </div>
-    <div class="reset-container">
-      <button class="btn btn-secondary" id="resetBoardBtn">Reset Board</button>
+    <div class="board-wrapper">
+      <div class="board-label">♚ Black</div>
+      <div class="board" id="boardBlack"></div>
     </div>
   </div>
 
-  <!-- BOT PAGE -->
-  <div class="page" id="page-bot">
-    <h1>RL Bot Configuration</h1>
-    <div class="bot-container">
+  <div class="bottom-row">
+    <button class="btn secondary" id="resetBoardBtn">↺ Reset Board</button>
+  </div>
+</div>
 
-      <!-- Model file row -->
-      <div class="form-row">
-        <label>Upload .pth model</label>
-        <input type="file" id="modelFile" accept=".pth"
-          style="background:#0f3460;border:1px solid #1a4a8a;border-radius:6px;color:#eee;padding:6px;width:200px;" />
-      </div>
-      <div class="form-row">
-        <label>or enter path</label>
-        <input type="text" id="modelPath" placeholder="models/chess_bot.pth" />
-      </div>
-      <div class="form-row">
-        <label>Play as</label>
-        <div class="color-selector">
-          <button class="color-btn selected" id="colorW" onclick="selectColor('W')">White</button>
-          <button class="color-btn" id="colorB" onclick="selectColor('B')">Black</button>
-        </div>
-      </div>
-      <div class="form-row">
-        <label></label>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-primary" onclick="uploadAndLoadBot()">Upload & Load</button>
-          <button class="btn btn-secondary" onclick="loadBot()">Load from Path</button>
-          <button class="btn btn-secondary" onclick="resetBot()">Reset</button>
-        </div>
-      </div>
+<!-- ── BOT MANAGEMENT PAGE ───────────────────────────────────────────── -->
+<div class="page" id="page-bot">
+  <h1>Bot Management</h1>
+  <div class="bot-container">
 
-      <div id="botControls" style="margin-bottom:12px;display:flex;align-items:center;gap:12px;margin-left:-50px;">
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-          <input type="checkbox" id="botEnabled" style="width:16px;height:16px;" />
-          <span>Enable Bot</span>
-        </label>
-        <span style="color:#aaa;font-size:13px;">Bot plays as:</span>
-        <select id="botPlayColor" style="background:#0f3460;border:1px solid #1a4a8a;border-radius:6px;color:#eee;padding:4px 8px;">
+    <div class="bot-section">
+      <h3>Load Model</h3>
+      <div class="form-row">
+        <label>Upload .pth file</label>
+        <input type="file" id="modelFile" accept=".pth">
+      </div>
+      <div class="form-row">
+        <label>Bot plays as</label>
+        <select id="uploadColor">
           <option value="B">Black</option>
           <option value="W">White</option>
         </select>
-        <span id="botIndicator" style="color:#4fc3f7;font-size:13px;"></span>
       </div>
-
-      <!-- Training -->
-      <div class="bot-section">
-        <h3>Training</h3>
+      <div class="row-btns" style="margin-top:8px">
+        <button class="btn-primary" onclick="uploadAndLoad()">Upload & Load</button>
+      </div>
+      <div style="margin-top:14px;border-top:1px solid #0f3460;padding-top:14px">
         <div class="form-row">
-          <label>Episodes</label>
-          <input type="number" id="trainEpisodes" value="1000" min="1" />
+          <label>or load from path</label>
+          <input type="text" id="modelPath" placeholder="models/chess_bot.pth">
         </div>
         <div class="form-row">
-          <label>Learning rate</label>
-          <input type="number" id="learningRate" value="0.001" step="0.0001" min="0.00001" />
+          <label>Bot plays as</label>
+          <select id="pathColor">
+            <option value="B">Black</option>
+            <option value="W">White</option>
+          </select>
         </div>
-        <div class="form-row">
-          <label>Discount (γ)</label>
-          <input type="range" id="gamma" min="0.8" max="0.999" step="0.001" value="0.99"
-            oninput="document.getElementById('gammaVal').textContent=this.value" />
-          <span class="range-value" id="gammaVal">0.99</span>
-        </div>
-        <div class="form-row">
-          <label>Epsilon (ε)</label>
-          <input type="range" id="epsilon" min="0.0" max="1.0" step="0.01" value="1.0"
-            oninput="document.getElementById('epsilonVal').textContent=this.value" />
-          <span class="range-value" id="epsilonVal">1.00</span>
-        </div>
-        <div class="form-row">
-          <label>Batch size</label>
-          <input type="number" id="batchSize" value="64" min="1" />
-        </div>
-        <div class="form-row">
-          <label>Save every N episodes</label>
-          <input type="number" id="saveInterval" value="100" min="1" />
-        </div>
-        <div class="training-controls">
-          <button class="btn btn-success" onclick="startTraining()">▶ Start Training</button>
-          <button class="btn btn-secondary" onclick="stopTraining()">⏹ Stop</button>
-          <button class="btn btn-secondary" onclick="saveModel()">💾 Save Model</button>
+        <div class="row-btns">
+          <button class="btn-secondary" onclick="loadFromPath()">Load from Path</button>
         </div>
       </div>
-
-      <!-- Stats -->
-      <div class="bot-section">
-        <h3>Training Stats</h3>
-        <div class="stat-grid">
-          <div class="stat-box">
-            <div class="stat-value" id="statEpisode">0</div>
-            <div class="stat-label">Episode</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-value" id="statWinRate">0%</div>
-            <div class="stat-label">Win Rate</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-value" id="statAvgReward">0.00</div>
-            <div class="stat-label">Avg Reward</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-value" id="statEpsilon">1.00</div>
-            <div class="stat-label">Current ε</div>
-          </div>
-        </div>
-        <div class="bot-status" id="botStatus">No model loaded.</div>
-      </div>
-
+      <div class="bot-status" id="botStatus">No model loaded.</div>
     </div>
-  </div>
 
-  <!-- PROMOTION MODAL -->
-  <div id="promotionModal">
-    <div id="promotionBox">
-      <h2>Promote Pawn</h2>
-      <div class="promotion-options" id="promotionOptions"></div>
+    <div class="bot-section">
+      <h3>Training</h3>
+      <div class="info-box">
+        Training is done by running <code>python rllearn.py</code> directly.<br><br>
+        The script trains against Stockfish (depth 15) using off-policy Q-learning with a deep residual network, and learns from both the agent's and the opponent's moves. It auto-saves every 20 episodes to <code>models/chess_bot.pth</code>. Press <code>Ctrl+C</code> to stop and save.
+      </div>
     </div>
+
   </div>
+</div>
 
-  <script>
-    const PIECE_IMAGES = {
-      'WK': 'static/pieces/wK.svg',
-      'WQ': 'static/pieces/wQ.svg',
-      'WR': 'static/pieces/wR.svg',
-      'WB': 'static/pieces/wB.svg',
-      'WN': 'static/pieces/wN.svg',
-      'WP': 'static/pieces/wP.svg',
-      'Bk': 'static/pieces/bK.svg',
-      'Bq': 'static/pieces/bQ.svg',
-      'Br': 'static/pieces/bR.svg',
-      'Bb': 'static/pieces/bB.svg',
-      'Bn': 'static/pieces/bN.svg',
-      'Bp': 'static/pieces/bP.svg',
-    };
+<!-- ── PROMOTION MODAL ───────────────────────────────────────────────── -->
+<div id="promotionModal">
+  <div id="promotionBox">
+    <h2>Promote Pawn</h2>
+    <div class="promotion-options" id="promotionOptions"></div>
+  </div>
+</div>
 
-    async function uploadAndLoadBot() {
-      const file = document.getElementById('modelFile').files[0];
-      if (!file) { setBotStatus('No file selected', 'error'); return; }
-      const formData = new FormData();
-      formData.append('model', file);
-      formData.append('color', botColor);
-      setBotStatus('Uploading model...', 'running');
-      try {
-        const res = await fetch('http://127.0.0.1:5000/api/bot/upload', {
-          method: 'POST', body: formData
-        });
-        const data = await res.json();
-        if (data.error) setBotStatus(data.error, 'error');
-        else {
-          setBotStatus(data.message, 'success');
-          document.getElementById('botPlayColor').value = botColor;
+<script>
+const PIECE_IMAGES = {
+  'WK':'static/pieces/wK.svg','WQ':'static/pieces/wQ.svg','WR':'static/pieces/wR.svg',
+  'WB':'static/pieces/wB.svg','WN':'static/pieces/wN.svg','WP':'static/pieces/wP.svg',
+  'BK':'static/pieces/bK.svg','BQ':'static/pieces/bQ.svg','BR':'static/pieces/bR.svg',
+  'BB':'static/pieces/bB.svg','BN':'static/pieces/bN.svg','BP':'static/pieces/bP.svg',
+};
+function imgSrc(fen, color) { return PIECE_IMAGES[color + fen.toUpperCase()] || null; }
+
+// ── Page nav ────────────────────────────────────────────────────────────
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+
+// ── Bot management page functions ───────────────────────────────────────
+function setBotStatus(msg, type='') {
+  const el = document.getElementById('botStatus');
+  el.textContent = msg; el.className = 'bot-status ' + type;
+}
+
+async function uploadAndLoad() {
+  const file  = document.getElementById('modelFile').files[0];
+  const color = document.getElementById('uploadColor').value;
+  if (!file) { setBotStatus('No file selected.', 'error'); return; }
+  const fd = new FormData();
+  fd.append('model', file); fd.append('color', color);
+  setBotStatus('Uploading...', 'running');
+  try {
+    const d = await fetch('http://127.0.0.1:5000/api/bot/upload', {method:'POST',body:fd}).then(r=>r.json());
+    if (d.error) { setBotStatus(d.error,'error'); return; }
+    setBotStatus(d.message, 'success');
+    // Sync game page bot color selector
+    document.getElementById('botPlayColor').value = color;
+    await maybeTriggerBotMove();
+  } catch { setBotStatus('Upload failed.','error'); }
+}
+
+async function loadFromPath() {
+  const path  = document.getElementById('modelPath').value;
+  const color = document.getElementById('pathColor').value;
+  setBotStatus('Loading...', 'running');
+  try {
+    const d = await fetch('http://127.0.0.1:5000/api/bot/load',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({path, color})
+    }).then(r=>r.json());
+    if (d.error) { setBotStatus(d.error,'error'); return; }
+    setBotStatus(d.message,'success');
+    document.getElementById('botPlayColor').value = color;
+    await maybeTriggerBotMove();
+  } catch { setBotStatus('Could not reach server.','error'); }
+}
+
+// ── Game ─────────────────────────────────────────────────────────────────
+let currentTurn = 'W';
+
+function onBotToggle()       { renderBothCurrent(); maybeTriggerBotMove(); }
+function onBotColorChange()  { renderBothCurrent(); maybeTriggerBotMove(); }
+
+let _cachedBoard = null;
+function renderBothCurrent() { if (_cachedBoard) renderBoth(_cachedBoard); }
+
+async function maybeTriggerBotMove() {
+  const enabled  = document.getElementById('botEnabled').checked;
+  const botColor = document.getElementById('botPlayColor').value;
+  if (!enabled || currentTurn !== botColor) return;
+
+  const ind = document.getElementById('botIndicator');
+  ind.textContent = '🤔 Thinking…';
+  try {
+    const mv = await fetch(`http://127.0.0.1:5000/api/bot/move?color=${botColor}`).then(r=>r.json());
+    if (mv.error) { ind.textContent = `Bot error: ${mv.error}`; return; }
+
+    const data = await fetch('http://127.0.0.1:5000/api/move',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({from: mv.from, to: mv.to})
+    }).then(r=>r.json());
+
+    if (data.error) { ind.textContent = `Invalid: ${data.error}`; return; }
+
+    if (data.promotion) {
+      // Bot always promotes to queen
+      const pd = await fetch('http://127.0.0.1:5000/api/promote',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({piece:'queen'})
+      }).then(r=>r.json());
+      currentTurn = currentTurn==='W'?'B':'W';
+      renderBoth(pd.board); updateStatus(pd); updateTurnIndicator();
+    } else {
+      currentTurn = currentTurn==='W'?'B':'W';
+      renderBoth(data.board); updateStatus(data); updateTurnIndicator();
+    }
+  } catch { ind.textContent = 'Bot failed.'; }
+  ind.textContent = '';
+}
+
+function renderBoard(boardData, containerId, perspective) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  const rows = perspective==='W' ? [...boardData].reverse() : boardData;
+
+  const botEnabled  = document.getElementById('botEnabled').checked;
+  const botPlayColor = document.getElementById('botPlayColor').value;
+
+  rows.forEach((row, rowIndex) => {
+    row.forEach((cell, colIndex) => {
+      const div = document.createElement('div');
+      div.className = `cell ${(rowIndex+colIndex)%2===0?'white':'black'}`;
+      const gridRow = perspective==='W' ? 7-rowIndex : rowIndex;
+      const { fen, color: pc } = cell;
+
+      if (fen !== ' ') {
+        const src = imgSrc(fen, pc);
+        if (src) {
+          const img = document.createElement('img');
+          img.src = src; img.style.cssText = 'width:46px;height:46px;pointer-events:none';
+          div.appendChild(img);
         }
-      } catch { setBotStatus('Upload failed', 'error'); }
-    }
 
-    function getPieceImage(fen, color) {
-      const key = color + fen;
-      console.log('Fetching image for:', key, '->', PIECE_IMAGES[key]);
-      return PIECE_IMAGES[key] || null;
-    }
+        // Disable drag if it's the bot's color
+        const botOwns = botEnabled && botPlayColor === pc;
+        const canDrag = !botOwns &&
+          ((perspective==='W' && pc==='W' && currentTurn==='W') ||
+           (perspective==='B' && pc==='B' && currentTurn==='B'));
 
-    // ─── PAGE NAV ───────────────────────────────────────────────────────────
-    function showPage(name) {
-      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-      document.getElementById('page-' + name).classList.add('active');
-      event.target.classList.add('active');
-      updateEvaluation();
-    }
-
-    async function updateEvaluation() {
-      try {
-        const response = await fetch('http://127.0.0.1:5000/api/eval');
-        const data = await response.json();
-        if (data.evaluation) {
-          const evalResult = data.evaluation;
-          const evalText = evalResult.type === 'cp'
-            ? `Centipawns: ${evalResult.value}`
-            : `Mate in ${evalResult.value}`;
-          document.getElementById('evalResult').textContent = `Evaluation: ${evalText}`;
-        } else {
-          document.getElementById('evalResult').textContent = 'Evaluation: Error fetching evaluation';
-        }
-      } catch (error) {
-        console.error('Error fetching evaluation:', error);
-        document.getElementById('evalResult').textContent = 'Evaluation: Failed to fetch';
-      }
-    }
-    
-
-    // ─── BOT PAGE ────────────────────────────────────────────────────────────
-    let botColor = 'W';
-
-    function selectColor(c) {
-      botColor = c;
-      document.getElementById('colorW').classList.toggle('selected', c === 'W');
-      document.getElementById('colorB').classList.toggle('selected', c === 'B');
-    }
-
-    function setBotStatus(msg, type = '') {
-      const el = document.getElementById('botStatus');
-      el.textContent = msg;
-      el.className = 'bot-status ' + type;
-    }
-
-    async function loadBot() {
-      const path = document.getElementById('modelPath').value;
-      const algo = document.getElementById('botAlgorithm').value;
-      setBotStatus(`Loading ${algo} model from ${path || 'default path'}...`, 'running');
-      try {
-        const res = await fetch('http://127.0.0.1:5000/api/bot/load', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ path, algorithm: algo, color: botColor })
-        });
-        const data = await res.json();
-        if (data.error) setBotStatus(data.error, 'error');
-        else setBotStatus(data.message || 'Model loaded.', 'success');
-      } catch {
-        setBotStatus('Could not reach server.', 'error');
-      }
-    }
-
-    function resetBot() {
-      setBotStatus('Bot reset.', '');
-      document.getElementById('statEpisode').textContent = '0';
-      document.getElementById('statWinRate').textContent = '0%';
-      document.getElementById('statAvgReward').textContent = '0.00';
-      document.getElementById('statEpsilon').textContent = '1.00';
-    }
-
-    let trainingInterval = null;
-
-    async function startTraining() {
-      const config = {
-        episodes: parseInt(document.getElementById('trainEpisodes').value),
-        learning_rate: parseFloat(document.getElementById('learningRate').value),
-        gamma: parseFloat(document.getElementById('gamma').value),
-        epsilon: parseFloat(document.getElementById('epsilon').value),
-        batch_size: parseInt(document.getElementById('batchSize').value),
-        save_interval: parseInt(document.getElementById('saveInterval').value),
-        algorithm: document.getElementById('botAlgorithm').value,
-        color: botColor
-      };
-
-      setBotStatus('Training started...', 'running');
-
-      try {
-        await fetch('http://127.0.0.1:5000/api/bot/train/start', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(config)
-        });
-      } catch {
-        setBotStatus('Could not reach server.', 'error');
-        return;
-      }
-
-      // Poll for stats every 2 seconds
-      trainingInterval = setInterval(async () => {
-        try {
-          const res = await fetch('http://127.0.0.1:5000/api/bot/stats');
-          const data = await res.json();
-          if (data.episode !== undefined) {
-            document.getElementById('statEpisode').textContent = data.episode;
-            document.getElementById('statWinRate').textContent =
-              (data.win_rate * 100).toFixed(1) + '%';
-            document.getElementById('statAvgReward').textContent =
-              data.avg_reward.toFixed(2);
-            document.getElementById('statEpsilon').textContent =
-              data.epsilon.toFixed(3);
-            setBotStatus(`Training... episode ${data.episode}`, 'running');
-            if (data.done) {
-              clearInterval(trainingInterval);
-              setBotStatus('Training complete!', 'success');
-            }
-          }
-        } catch {}
-      }, 2000);
-    }
-
-    async function stopTraining() {
-      clearInterval(trainingInterval);
-      try {
-        await fetch('http://127.0.0.1:5000/api/bot/train/stop', { method: 'POST' });
-      } catch {}
-      setBotStatus('Training stopped.', '');
-    }
-
-    async function saveModel() {
-      const path = document.getElementById('modelPath').value;
-      setBotStatus('Saving model...', 'running');
-      try {
-        const res = await fetch('http://127.0.0.1:5000/api/bot/save', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ path })
-        });
-        const data = await res.json();
-        if (data.error) setBotStatus(data.error, 'error');
-        else setBotStatus(data.message || 'Model saved.', 'success');
-      } catch {
-        setBotStatus('Could not reach server.', 'error');
-      }
-    }
-
-    // ─── GAME ────────────────────────────────────────────────────────────────
-    (async () => {
-      document.getElementById('resetBoardBtn').addEventListener('click', async () => {
-        try {
-          const response = await fetch('http://127.0.0.1:5000/api/reset', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
+        if (canDrag) {
+          div.draggable = true;
+          div.addEventListener('dragstart', e => {
+            e.dataTransfer.setData('from-row', gridRow);
+            e.dataTransfer.setData('from-col', colIndex);
+            e.dataTransfer.setData('persp', perspective);
+            div.classList.add('dragging');
           });
-          const data = await response.json();
-          if (data.board) {
-            currentTurn = 'W'; // Reset the turn to White
-            renderBoth(data.board); // Re-render the board
-            updateTurnIndicator(); // Update the turn indicator
-            document.getElementById('statusBar').textContent = ''; // Clear the status bar
-            await maybeTriggerBotMove()
-          } else if (data.error) {
-            alert(data.error);
-          }
-        } catch (error) {
-          console.error('Error resetting the board:', error);
-          alert('Failed to reset the board. Please try again.');
+          div.addEventListener('dragend', () => div.classList.remove('dragging'));
+        }
+      }
+
+      div.addEventListener('dragover',  e => { e.preventDefault(); div.classList.add('drag-over'); });
+      div.addEventListener('dragleave', ()=> div.classList.remove('drag-over'));
+      div.addEventListener('drop', async e => {
+        e.preventDefault(); div.classList.remove('drag-over');
+        const fromRow  = parseInt(e.dataTransfer.getData('from-row'));
+        const fromCol  = parseInt(e.dataTransfer.getData('from-col'));
+        const persp    = e.dataTransfer.getData('persp');
+        if (persp !== perspective || (fromRow===gridRow && fromCol===colIndex)) return;
+
+        const data = await fetch('http://127.0.0.1:5000/api/move',{
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({from:[fromRow,fromCol], to:[gridRow,colIndex]})
+        }).then(r=>r.json());
+
+        if (data.error) { alert(data.error); return; }
+        if (data.promotion) {
+          renderBoth(data.board);
+          showPromotionPicker(data.color);
+        } else {
+          currentTurn = currentTurn==='W'?'B':'W';
+          renderBoth(data.board); updateStatus(data); updateTurnIndicator();
+          await maybeTriggerBotMove();
         }
       });
 
-      let currentTurn = 'W';
+      container.appendChild(div);
+    });
+  });
+}
 
-      async function fetchBoard() {
-        const res = await fetch('http://127.0.0.1:5000/api/board');
-        return await res.json();
-      }
+function renderBoth(boardData) {
+  _cachedBoard = boardData;
+  renderBoard(boardData, 'boardWhite', 'W');
+  renderBoard(boardData, 'boardBlack', 'B');
+}
 
-      async function maybeTriggerBotMove() {
-        const enabled = document.getElementById('botEnabled').checked;
-        if (!enabled) return;
-        const botColor = document.getElementById('botPlayColor').value;
-        if (currentTurn !== botColor) return;
+function updateTurnIndicator() {
+  document.getElementById('turnIndicator').textContent =
+    currentTurn==='W' ? "White's turn" : "Black's turn";
+}
 
-        document.getElementById('botIndicator').textContent = 'Bot is thinking...';
-        try {
-          const moveRes = await fetch(`http://127.0.0.1:5000/api/bot/move?color=${botColor}`);
-          const moveData = await moveRes.json();
-          if (moveData.error) {
-            document.getElementById('botIndicator').textContent = `Bot error: ${moveData.error}`;
-            return;
-          }
+function updateStatus(data) {
+  const bar = document.getElementById('statusBar');
+  bar.className = '';
+  if (data.checkmate) {
+    bar.textContent = `Checkmate! ${data.checkmated_color==='W'?'Black':'White'} wins!`;
+    bar.className = 'checkmate';
+  } else if (data.stalemate) {
+    bar.textContent = "Stalemate — draw!"; bar.className = 'stalemate';
+  } else if (data.check) {
+    bar.textContent = `${data.checked_color==='B'?'Black':'White'} is in check!`;
+    bar.className = 'check';
+  }
+}
 
-          const res = await fetch('http://127.0.0.1:5000/api/move', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ from: moveData.from, to: moveData.to })
-          });
-          const data = await res.json();
-          if (data.error) {
-            document.getElementById('botIndicator').textContent = `Bot move invalid: ${data.error}`;
-          } else if (data.promotion) {
-            // Bot always promotes to queen
-            await fetch('http://127.0.0.1:5000/api/promote', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ piece: 'queen' })
-            }).then(r => r.json()).then(d => { renderBoth(d.board); updateStatus(d); });
-            currentTurn = currentTurn === 'W' ? 'B' : 'W';
-            updateTurnIndicator();
-          } else {
-            currentTurn = currentTurn === 'W' ? 'B' : 'W';
-            renderBoth(data.board);
-            updateStatus(data);
-            updateTurnIndicator();
-          }
-          document.getElementById('botIndicator').textContent = '';
-        } catch (e) {
-          document.getElementById('botIndicator').textContent = 'Bot failed to move';
-        }
-      }
+function showPromotionPicker(pieceColor) {
+  const fens  = pieceColor==='W' ? ['Q','R','B','N'] : ['q','r','b','n'];
+  const names = {Q:'queen',R:'rook',B:'bishop',N:'knight'};
+  const modal = document.getElementById('promotionModal');
+  const opts  = document.getElementById('promotionOptions');
+  opts.innerHTML = '';
+  fens.forEach(fen => {
+    const btn = document.createElement('button');
+    btn.className = 'promotion-btn';
+    const img = document.createElement('img');
+    img.src = imgSrc(fen, pieceColor);
+    img.style.cssText = 'width:48px;height:48px';
+    btn.appendChild(img);
+    btn.addEventListener('click', async () => {
+      modal.classList.remove('active');
+      const data = await fetch('http://127.0.0.1:5000/api/promote',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({piece: names[fen.toUpperCase()]})
+      }).then(r=>r.json());
+      if (data.error) { alert(data.error); return; }
+      currentTurn = currentTurn==='W'?'B':'W';
+      renderBoth(data.board); updateStatus(data); updateTurnIndicator();
+      await maybeTriggerBotMove();
+    });
+    opts.appendChild(btn);
+  });
+  modal.classList.add('active');
+}
 
-      function renderBoard(boardData, containerId, perspective) {
-        const container = document.getElementById(containerId);
-        container.innerHTML = '';
-        const rows = perspective === 'W' ? [...boardData].reverse() : boardData;
+// ── Reset ────────────────────────────────────────────────────────────────
+document.getElementById('resetBoardBtn').addEventListener('click', async () => {
+  const data = await fetch('http://127.0.0.1:5000/api/reset',{
+    method:'POST', headers:{'Content-Type':'application/json'}
+  }).then(r=>r.json());
+  if (data.error) { alert(data.error); return; }
+  currentTurn = 'W';
+  document.getElementById('statusBar').textContent = '';
+  document.getElementById('statusBar').className   = '';
+  renderBoth(data.board); updateTurnIndicator();
+  await maybeTriggerBotMove();   // trigger white bot on reset if enabled
+});
 
-        console.log("---------------NEW CALL RENDER BOARD--------------")
-        rows.forEach((row, rowIndex) => {
-          row.forEach((cell, colIndex) => {
-            const cellDiv = document.createElement('div');
-            cellDiv.className = `cell ${((rowIndex + colIndex) % 2 === 0) ? 'white' : 'black'}`;
-
-            const gridRow = perspective === 'W' ? (7 - rowIndex) : rowIndex;
-            const fen = cell.fen;
-            // console.log(`Rendering cell at gridRow: ${gridRow}, colIndex: ${colIndex}, fen: ${fen}, color: ${cell.color}`);
-            const pieceColor = cell.color;
-
-            if (fen !== ' ') {
-              const imgSrc = getPieceImage(fen, pieceColor);
-              if (imgSrc) {
-                const img = document.createElement('img');
-                img.src = imgSrc;
-                img.style.width = '46px';
-                img.style.height = '46px';
-                img.style.pointerEvents = 'none';  // so drag events hit the cell, not the img
-                cellDiv.appendChild(img);
-              }
-
-              const canDrag =
-                (perspective === 'W' && pieceColor === 'W' && currentTurn === 'W') ||
-                (perspective === 'B' && pieceColor === 'B' && currentTurn === 'B');
-
-              if (canDrag) {
-                cellDiv.draggable = true;
-                cellDiv.addEventListener('dragstart', (e) => {
-                  e.dataTransfer.setData('from-row', gridRow);
-                  e.dataTransfer.setData('from-col', colIndex);
-                  e.dataTransfer.setData('perspective', perspective);
-                  cellDiv.classList.add('dragging');
-                });
-                cellDiv.addEventListener('dragend', () => {
-                  cellDiv.classList.remove('dragging');
-                });
-              }
-            }
-
-            cellDiv.addEventListener('dragover', (e) => {
-              e.preventDefault();
-              cellDiv.classList.add('drag-over');
-            });
-            cellDiv.addEventListener('dragleave', () => {
-              cellDiv.classList.remove('drag-over');
-            });
-            cellDiv.addEventListener('drop', async (e) => {
-              e.preventDefault();
-              cellDiv.classList.remove('drag-over');
-
-              const fromRow = parseInt(e.dataTransfer.getData('from-row'));
-              const fromCol = parseInt(e.dataTransfer.getData('from-col'));
-              const dragPerspective = e.dataTransfer.getData('perspective');
-
-              if (dragPerspective !== perspective) return;
-              if (fromRow === gridRow && fromCol === colIndex) return;
-
-              const res = await fetch('http://127.0.0.1:5000/api/move', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  from: [fromRow, fromCol],
-                  to:   [gridRow, colIndex]
-                })
-              });
-
-              const data = await res.json();
-              if (data.error) {
-                alert(data.error);
-              } else if (data.promotion) {
-                renderBoth(data.board);
-                showPromotionPicker(data.color);
-              } else {
-                currentTurn = currentTurn === 'W' ? 'B' : 'W';
-                renderBoth(data.board);
-                updateStatus(data);
-                updateTurnIndicator();
-                await maybeTriggerBotMove()
-              }
-            });
-
-            container.appendChild(cellDiv);
-          });
-        });
-      }
-
-      function renderBoth(boardData) {
-        renderBoard(boardData, 'boardWhite', 'W');
-        renderBoard(boardData, 'boardBlack', 'B');
-        updateEvaluation();
-      }
-
-      function updateTurnIndicator() {
-        document.getElementById('turnIndicator').textContent =
-          currentTurn === 'W' ? "White's turn" : "Black's turn";
-      }
-
-      function updateStatus(data) {
-        const bar = document.getElementById('statusBar');
-        bar.className = '';
-        if (data.checkmate) {
-          const winner = data.checkmated_color === 'W' ? 'Black' : 'White';
-          bar.textContent = `Checkmate! ${winner} wins!`;
-          bar.className = 'checkmate';
-        } else if (data.stalemate) {
-          bar.textContent = "Stalemate! It's a draw!";
-          bar.className = 'stalemate';
-        } else if (data.check) {
-          const inCheck = data.checked_color === 'B' ? 'Black' : 'White';
-          bar.textContent = `${inCheck} is in check!`;
-          bar.className = 'check';
-        } else {
-          bar.textContent = '';
-        }
-      }
-
-      function showPromotionPicker(pieceColor) {
-        const pieces = pieceColor == 'W' ? ['Q', 'R', 'B', 'N'] : ['q', 'r', 'b', 'n'];
-        const names  = { Q: 'queen', R: 'rook', B: 'bishop', N: 'knight' };
-
-        const modal = document.getElementById('promotionModal');
-        const options = document.getElementById('promotionOptions');
-        options.innerHTML = '';
-        console.log("---------------NEW CALL PROMOTION--------------")
-        pieces.forEach(fen => {
-          const btn = document.createElement('button');
-          btn.className = 'promotion-btn';
-
-          const img = document.createElement('img');
-          img.src = getPieceImage(fen, pieceColor);
-          img.style.width = '48px';
-          img.style.height = '48px';
-          btn.appendChild(img);
-          btn.title = names[fen.toUpperCase()];
-
-          btn.addEventListener('click', async () => {
-            modal.classList.remove('active');
-            const res = await fetch('http://127.0.0.1:5000/api/promote', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ piece: names[fen.toUpperCase()] })
-            });
-            const data = await res.json();
-            if (data.error) {
-              alert(data.error);
-            } else {
-              currentTurn = currentTurn === 'W' ? 'B' : 'W';
-              renderBoth(data.board);
-              updateStatus(data);
-              updateTurnIndicator();
-              await maybeTriggerBotMove()
-            }
-          });
-          options.appendChild(btn);
-        });
-
-        modal.classList.add('active');
-      }
-
-      const board = await fetchBoard();
-      renderBoth(board);
-    })();
-  </script>
+// ── Init ─────────────────────────────────────────────────────────────────
+(async () => {
+  const board = await fetch('http://127.0.0.1:5000/api/board').then(r=>r.json());
+  renderBoth(board);
+  await maybeTriggerBotMove();   // trigger white bot on page load if enabled
+})();
+</script>
 </body>
 </html>
-
-
