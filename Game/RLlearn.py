@@ -393,7 +393,7 @@ def run_episode(agent, stockfish, opp_color, max_plies=150, use_eval=True,
         agent.mem.push(s_tensor, act, step_r, next_tensor, False, nla_enc)
         total_r  += step_r
         s_tensor  = next_tensor
-
+    board.display()
     return outcome, total_r
 
 
