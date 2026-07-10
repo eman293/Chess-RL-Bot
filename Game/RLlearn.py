@@ -47,9 +47,6 @@ def material_balance(board, color):
             else: opp += v
     return own - opp
 
-
-# ── Candidate squares per piece type (avoids brute-forcing all 64) ────────
-
 def _pawn_cands(r, c, color):
     d = 1 if color=='W' else -1; sr = 1 if color=='W' else 6
     cands = [(r+d,c),(r+d,c-1),(r+d,c+1)]
@@ -114,12 +111,9 @@ def fresh_board():
     for i in range(8): b.grid[6][i]=Pawn("B")
     return b
 
-
-# ── Stockfish helpers ──────────────────────────────────────────────────────
-
 def local_board_to_fen(board, side_to_move, last_move=None):
     rows = []
-    for r in range(7, -1, -1):        # rank 8 down to rank 1
+    for r in range(7, -1, -1):        
         s, empty = "", 0
         for c in range(8):
             p = board.grid[r][c]
@@ -175,9 +169,6 @@ def sf_eval(sf, board, color, last_move=None):
         return float(r['value']) if r['type']=='cp' else (10000.0 if r['value']>0 else -10000.0)
     except: return None
 
-
-# ── Model ─────────────────────────────────────────────────────────────────
-
 class ResBlock(nn.Module):
     def __init__(self, ch):
         super().__init__()
@@ -214,9 +205,6 @@ class ReplayBuffer:
     def push(self, *args): self.buf.append(args)
     def sample(self, n):   return random.sample(self.buf, n)
     def __len__(self):     return len(self.buf)
-
-
-# ── Agent ─────────────────────────────────────────────────────────────────
 
 class ChessQLearningAgent:
     def __init__(self, color='W', lr=3e-4, gamma=0.99, epsilon=1.0,
@@ -298,9 +286,6 @@ class ChessQLearningAgent:
         self.epsilon = ck.get('epsilon', self.epsilon)
         self.color   = ck.get('color',   self.color)
 
-
-# ── Episode ───────────────────────────────────────────────────────────────
-
 def run_episode(agent, stockfish, opp_color, max_plies=150, use_eval=True,
                 learn_from_opponent=True):
     """
@@ -316,6 +301,7 @@ def run_episode(agent, stockfish, opp_color, max_plies=150, use_eval=True,
     outcome   = 'draw'
 
     for _ in range(max_plies):
+        board.display()
         # ── Agent's turn ─────────────────────────────────────────────────
         legal = get_legal_moves(board, agent.color, last_move)
         if not legal:
@@ -396,9 +382,6 @@ def run_episode(agent, stockfish, opp_color, max_plies=150, use_eval=True,
     board.display()
     return outcome, total_r
 
-
-# ── Training manager (called by game.py Flask endpoints) ──────────────────
-
 class TrainingManager:
     def __init__(self):
         self.agent = None
@@ -412,7 +395,7 @@ class TrainingManager:
         self._rh  = deque(maxlen=100)
         self.stats = {'episode':0,'win_rate':0.,'avg_reward':0.,'epsilon':1.,'done':False}
 
-    def configure(self, color='W', lr=3e-4, gamma=0.99, epsilon=1.0,
+    def configure(self, color='W', lr=1e-3, gamma=0.99, epsilon=1.0,
                   batch_size=256, sf_path=None, sf_depth=15,
                   channels=256, num_res=10):
         self.agent = ChessQLearningAgent(color=color, lr=lr, gamma=gamma,
@@ -473,16 +456,13 @@ class TrainingManager:
     def get_stats(self):
         with self._lock: return dict(self.stats)
 
-
-# ── Standalone training entry point ───────────────────────────────────────
-
 if __name__ == '__main__':
     import signal
     load_path = save_path = "models/chess_bot.pth"
     os.makedirs("models", exist_ok=True)
 
     agent = ChessQLearningAgent(color='W', epsilon=1.0, epsilon_min=0.05,
-                                 epsilon_decay=0.997, batch_size=256,
+                                 epsilon_decay=0.999, batch_size=256,
                                  channels=256, num_res=10)
     if os.path.exists(load_path):
         print(f"Resuming from {load_path}")
@@ -498,7 +478,7 @@ if __name__ == '__main__':
         print(f"\nSaving to {save_path}..."); agent.save(save_path); sys.exit(0)
     signal.signal(signal.SIGINT, _save_exit)
 
-    while ep < 50000:
+    while ep < 200000:
         outcome, reward = run_episode(agent, sf, 'B', use_eval=True, learn_from_opponent=True)
         for _ in range(8): agent.train_step()
         agent.decay_eps()

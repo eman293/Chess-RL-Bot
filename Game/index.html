@@ -419,14 +419,14 @@ document.getElementById('resetBoardBtn').addEventListener('click', async () => {
   document.getElementById('statusBar').textContent = '';
   document.getElementById('statusBar').className   = '';
   renderBoth(data.board); updateTurnIndicator();
-  await maybeTriggerBotMove();   // trigger white bot on reset if enabled
+  await maybeTriggerBotMove();   
 });
 
 // ── Init ─────────────────────────────────────────────────────────────────
 (async () => {
   const board = await fetch('http://127.0.0.1:5000/api/board').then(r=>r.json());
   renderBoth(board);
-  await maybeTriggerBotMove();   // trigger white bot on page load if enabled
+  await maybeTriggerBotMove();   
 })();
 </script>
 </body>
