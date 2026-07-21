@@ -35,6 +35,8 @@ Dataset schemas (confirmed from HuggingFace)
       solver_color = other(FEN side-to-move)
 """
 
+##Needs more complex architecture - only has 31mil trainable params
+
 import os
 import copy
 import random
@@ -386,7 +388,7 @@ class QNetwork(nn.Module):
     Input : (batch, 13, 8, 8) board tensor
     Output: (batch, NUM_ACTIONS) Q-values for every (from_sq, to_sq) pair
     """
-    def __init__(self, num_actions=NUM_ACTIONS, channels=256, num_res=10):
+    def __init__(self, num_actions=NUM_ACTIONS, channels=1024, num_res=30):
         super().__init__()
         self.stem = nn.Sequential(
             nn.Conv2d(13, channels, 3, padding=1, bias=False),
@@ -395,7 +397,7 @@ class QNetwork(nn.Module):
         self.res = nn.Sequential(*[ResBlock(channels) for _ in range(num_res)])
         self.head = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(channels * 8 * 8, 1024), nn.ReLU(), nn.Dropout(0.3),
+            nn.Linear(channels * 8 * 8, 1024), nn.ReLU(), nn.Dropout(0.2),
             nn.Linear(1024, 512),               nn.ReLU(), nn.Dropout(0.2),
             nn.Linear(512, num_actions),
         )

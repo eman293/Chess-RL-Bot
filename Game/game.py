@@ -7,7 +7,7 @@ import math
 from stockfish import Stockfish
 import os
 from flask import send_from_directory
-from rllearn import TrainingManager, get_legal_moves
+from RLlearn import TrainingManager, get_legal_moves
 
 app = Flask(__name__)
 CORS(app)
