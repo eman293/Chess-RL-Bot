@@ -45,6 +45,7 @@ import sys
 import signal
 import argparse
 from collections import deque
+from tqdm import tqdm
 
 import torch
 import torch.nn as nn
@@ -586,45 +587,51 @@ def pretrain_on_openings(agent, save_path=None, epochs=5,
         random.shuffle(rows)
         n_samples = 0; n_skipped = 0; batch_losses = []
 
-        for row in rows:
-            uci_moves = row['uci'].split()
-            if not uci_moves: continue
+        # Add a progress bar for the rows in the dataset
+        with tqdm(total=len(rows), desc=f"Epoch {epoch+1}/{epochs}", unit="opening") as pbar:
+            for row in rows:
+                uci_moves = row['uci'].split()
+                if not uci_moves: 
+                    pbar.update(1)
+                    continue
 
-            board     = fresh_board()
-            last_move = None
-            stm       = 'W'       # white always starts
+                board     = fresh_board()
+                last_move = None
+                stm       = 'W'  # white always starts
 
-            for uci in uci_moves:
-                if ac is None or stm == ac:
-                    try:
-                        (fr, fc), (tr, tc), _ = _parse_uci(uci)
-                        demo_action = encode_action((fr, fc), (tr, tc))
-                        state_t     = board_to_tensor(board, stm)
-                        legal       = get_legal_moves(board, stm, last_move)
-                        legal_enc   = [encode_action(fp, tp) for fp, tp in legal]
+                for uci in uci_moves:
+                    if ac is None or stm == ac:
+                        try:
+                            (fr, fc), (tr, tc), _ = _parse_uci(uci)
+                            demo_action = encode_action((fr, fc), (tr, tc))
+                            state_t     = board_to_tensor(board, stm)
+                            legal       = get_legal_moves(board, stm, last_move)
+                            legal_enc   = [encode_action(fp, tp) for fp, tp in legal]
 
-                        if demo_action in legal_enc:
-                            loss = _imitation_loss(agent.policy, state_t,
-                                                   demo_action, legal_enc,
-                                                   agent.device, margin)
-                            if loss is not None:
-                                batch_losses.append(loss)
-                                n_samples += 1
-                        else:
+                            if demo_action in legal_enc:
+                                loss = _imitation_loss(agent.policy, state_t,
+                                                       demo_action, legal_enc,
+                                                       agent.device, margin)
+                                if loss is not None:
+                                    batch_losses.append(loss)
+                                    n_samples += 1
+                            else:
+                                n_skipped += 1
+
+                            if len(batch_losses) >= batch_size:
+                                _opt_step(opt, batch_losses, agent.policy)
+                                batch_losses = []
+                        except Exception:
                             n_skipped += 1
 
-                        if len(batch_losses) >= batch_size:
-                            _opt_step(opt, batch_losses, agent.policy)
-                            batch_losses = []
+                    # Apply move regardless (need board state to advance)
+                    try:
+                        last_move = _apply_uci(board, uci, last_move)
                     except Exception:
-                        n_skipped += 1
+                        break  # invalid position — stop this opening line
+                    stm = other_color(stm)
 
-                # Apply move regardless (need board state to advance)
-                try:
-                    last_move = _apply_uci(board, uci, last_move)
-                except Exception:
-                    break   # invalid position — stop this opening line
-                stm = other_color(stm)
+                pbar.update(1)  # Update the progress bar for each row
 
         _opt_step(opt, batch_losses, agent.policy)
         print(f"[stage 0] epoch {epoch+1}/{epochs}  samples={n_samples}  skipped={n_skipped}")
@@ -682,88 +689,91 @@ def pretrain_on_puzzles(agent, save_path=None,
     print(f"[stage 1] Filtering rating {min_rating}–{max_rating}, "
           f"max_puzzles={max_puzzles}, themes={themes_filter}")
 
-    for row in ds:
-        # ── Filter ──────────────────────────────────────────────────────────
-        rating = row.get('Rating', 0)
-        if not (min_rating <= rating <= max_rating):
-            continue
-
-        if themes_filter is not None:
-            themes = row.get('Themes', [])
-            # Themes field may be a list or a space-separated string
-            if isinstance(themes, str): themes = themes.split()
-            if not any(t in themes for t in themes_filter):
+    # Add a progress bar for the puzzles
+    with tqdm(total=max_puzzles, desc="Puzzle Pretraining Progress", unit="puzzle") as pbar:
+        for row in ds:
+            # ── Filter ──────────────────────────────────────────────────────────
+            rating = row.get('Rating', 0)
+            if not (min_rating <= rating <= max_rating):
                 continue
 
-        if max_puzzles and n_puzzles >= max_puzzles:
-            break
+            if themes_filter is not None:
+                themes = row.get('Themes', [])
+                if isinstance(themes, str): themes = themes.split()
+                if not any(t in themes for t in themes_filter):
+                    continue
 
-        moves = row['Moves'].split()
-        if len(moves) < 2:
-            continue   # need trigger + at least one solution move
+            if max_puzzles and n_puzzles >= max_puzzles:
+                break
 
-        # ── Set up board from FEN ────────────────────────────────────────────
-        try:
-            board, fen_stm, last_move = fen_to_board(row['FEN'])
-        except Exception:
-            continue
+            moves = row['Moves'].split()
+            if len(moves) < 2:
+                continue  # need trigger + at least one solution move
 
-        solver_color = other_color(fen_stm)
-        n_puzzles += 1
-
-        # ── Apply trigger move (Moves[0]) ────────────────────────────────────
-        try:
-            last_move = _apply_uci(board, moves[0], last_move)
-        except Exception:
-            continue
-
-        # ── Extract solver's moves (odd-indexed: 1, 3, 5, …) ────────────────
-        puzzle_ok = True
-        for i in range(1, len(moves), 2):
-            demo_uci = moves[i]
+            # ── Set up board from FEN ────────────────────────────────────────────
             try:
-                (fr, fc), (tr, tc), _ = _parse_uci(demo_uci)
-                demo_action = encode_action((fr, fc), (tr, tc))
-                state_t     = board_to_tensor(board, solver_color)
-                legal       = get_legal_moves(board, solver_color, last_move)
-                legal_enc   = [encode_action(fp, tp) for fp, tp in legal]
+                board, fen_stm, last_move = fen_to_board(row['FEN'])
+            except Exception:
+                continue
 
-                if not legal or demo_action not in legal_enc:
+            solver_color = other_color(fen_stm)
+            n_puzzles += 1
+
+            # ── Apply trigger move (Moves[0]) ────────────────────────────────────
+            try:
+                last_move = _apply_uci(board, moves[0], last_move)
+            except Exception:
+                continue
+
+            # ── Extract solver's moves (odd-indexed: 1, 3, 5, …) ────────────────
+            puzzle_ok = True
+            for i in range(1, len(moves), 2):
+                demo_uci = moves[i]
+                try:
+                    (fr, fc), (tr, tc), _ = _parse_uci(demo_uci)
+                    demo_action = encode_action((fr, fc), (tr, tc))
+                    state_t     = board_to_tensor(board, solver_color)
+                    legal       = get_legal_moves(board, solver_color, last_move)
+                    legal_enc   = [encode_action(fp, tp) for fp, tp in legal]
+
+                    if not legal or demo_action not in legal_enc:
+                        n_skipped += 1
+                        puzzle_ok = False
+                        break
+
+                    loss = _imitation_loss(agent.policy, state_t,
+                                           demo_action, legal_enc,
+                                           agent.device, margin)
+                    if loss is not None:
+                        batch_losses.append(loss)
+                        n_samples += 1
+
+                    # Apply solver's move
+                    last_move = _apply_uci(board, demo_uci, last_move)
+
+                    # Apply opponent response (Moves[i+1]) if it exists
+                    if i + 1 < len(moves):
+                        last_move = _apply_uci(board, moves[i + 1], last_move)
+
+                    # Batch update
+                    if len(batch_losses) >= batch_size:
+                        _opt_step(opt, batch_losses, agent.policy)
+                        batch_losses = []
+
+                except Exception:
                     n_skipped += 1
                     puzzle_ok = False
                     break
 
-                loss = _imitation_loss(agent.policy, state_t,
-                                       demo_action, legal_enc,
-                                       agent.device, margin)
-                if loss is not None:
-                    batch_losses.append(loss)
-                    n_samples += 1
+            pbar.update(1)  # Update the progress bar for each puzzle
 
-                # Apply solver's move
-                last_move = _apply_uci(board, demo_uci, last_move)
+            if n_puzzles % log_every == 0:
+                print(f"[stage 1] puzzles={n_puzzles}  samples={n_samples}  skipped={n_skipped}")
+                if save_path:
+                    agent.policy.eval()
+                    agent.save(save_path.replace('.pth', f'_{n_puzzles}.pth'))
+                    agent.policy.train()
 
-                # Apply opponent response (Moves[i+1]) if it exists
-                if i + 1 < len(moves):
-                    last_move = _apply_uci(board, moves[i + 1], last_move)
-
-                # Batch update
-                if len(batch_losses) >= batch_size:
-                    _opt_step(opt, batch_losses, agent.policy)
-                    batch_losses = []
-
-            except Exception:
-                n_skipped += 1
-                puzzle_ok = False
-                break
-
-        if n_puzzles % log_every == 0:
-            print(f"[stage 1] puzzles={n_puzzles}  samples={n_samples}  skipped={n_skipped}")
-            # Periodic save mid-stage
-            if save_path:
-                agent.policy.eval(); agent.save(save_path.replace('.pth', f'_{n_puzzles}.pth')); agent.policy.train()
-
-    # Flush remainder
     _opt_step(opt, batch_losses, agent.policy)
     agent.policy.eval()
 
@@ -965,8 +975,8 @@ if __name__ == '__main__':
     parser.add_argument('--color', default='W', choices=['W', 'B'],
                         help='Color the agent plays during RL stage')
     parser.add_argument('--rl-episodes', type=int, default=200_000)
-    parser.add_argument('--max-puzzles', type=int, default=150_000)
-    parser.add_argument('--opening-epochs', type=int, default=5)
+    parser.add_argument('--max-puzzles', type=int, default=500_000)
+    parser.add_argument('--opening-epochs', type=int, default=15)
     args = parser.parse_args()
 
     os.makedirs('models', exist_ok=True)
@@ -1014,7 +1024,7 @@ if __name__ == '__main__':
             min_rating=900, max_rating=2200,
             themes_filter=None,   # None = use all themes
             batch_size=128, lr=5e-4, margin=0.8,
-            log_every=5_000,
+            log_every=100_000,
         )
 
     # ── Stage 2: RL training against Stockfish ────────────────────────────────
