@@ -35,8 +35,6 @@ Dataset schemas (confirmed from HuggingFace)
       solver_color = other(FEN side-to-move)
 """
 
-##Needs more complex architecture - only has 31mil trainable params
-
 import os
 import copy
 import random
@@ -429,7 +427,7 @@ class ChessQLearningAgent:
                  batch_size=256, buf_size=40_000,
                  win_r=20.0, draw_r=2.0, loss_r=-20.0,
                  check_b=0.3, check_p=0.3, mat_w=1.0, eval_w=0.2,
-                 channels=256, num_res=10, device=None):
+                 channels=512, num_res=40, device=None):
         self.color          = color
         self.gamma          = gamma
         self.epsilon        = epsilon
@@ -635,6 +633,8 @@ def pretrain_on_openings(agent, save_path=None, epochs=5,
 
         _opt_step(opt, batch_losses, agent.policy)
         print(f"[stage 0] epoch {epoch+1}/{epochs}  samples={n_samples}  skipped={n_skipped}")
+        if save_path:
+            agent.save(save_path)
 
     agent.policy.eval()
     if save_path:
@@ -808,6 +808,7 @@ def run_episode(agent, stockfish, opp_color, max_plies=150,
 
     for _ in range(max_plies):
         # ── Agent's turn ─────────────────────────────────────────────────────
+        board.display()
         legal = get_legal_moves(board, agent.color, last_move)
         if not legal:
             outcome = 'loss-no-moves' if is_in_check(board, agent.color, last_move) else 'draw'
@@ -901,7 +902,7 @@ class TrainingManager:
         self.stats = {'episode': 0, 'win_rate': 0., 'avg_reward': 0., 'epsilon': 1., 'done': False}
 
     def configure(self, color='W', lr=3e-4, gamma=0.99, epsilon=1.0,
-                  batch_size=256, sf_path=None, sf_depth=15, channels=256, num_res=10):
+                  batch_size=256, sf_path=None, sf_depth=15, channels=512, num_res=40):
         self.agent = ChessQLearningAgent(color=color, lr=lr, gamma=gamma,
                                           epsilon=epsilon, batch_size=batch_size,
                                           channels=channels, num_res=num_res)
@@ -993,7 +994,7 @@ if __name__ == '__main__':
     agent = ChessQLearningAgent(
         color=args.color,
         epsilon=1.0, epsilon_min=0.05, epsilon_decay=0.999,
-        batch_size=256, channels=256, num_res=10,
+        batch_size=256, channels=512, num_res=40,
     )
 
     # ── Stage 0: Opening pretraining ─────────────────────────────────────────
