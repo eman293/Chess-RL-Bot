@@ -928,7 +928,7 @@ def pretrain_on_puzzles(agent, save_path=None,
                 print(f"[stage 1] puzzles={n_puzzles}  samples={n_samples}  skipped={n_skipped}")
                 if save_path:
                     agent.policy.eval()
-                    agent.save(save_path.replace('.pth', f'_p{n_puzzles}.pth'))
+                    agent.save(save_path)
                     agent.policy.train()
 
     _opt_step(opt, batch_losses, agent.policy)
@@ -1210,7 +1210,7 @@ if __name__ == '__main__':
             min_rating=800, max_rating=2400,
             themes_filter=None,
             batch_size=128, lr=5e-4, margin=0.8,
-            log_every=10_000,
+            log_every=100_000,
         )
 
     # ── Stage 2: RL against Stockfish ─────────────────────────────────────────
