@@ -775,7 +775,7 @@ def pretrain_on_openings(agent, save_path=None, epochs=5,
     try:
         from datasets import load_dataset
         print("[stage 0] Loading chess-openings dataset …")
-        ds   = load_dataset("Lichess/chess-openings", split="train", num_proc=8)
+        ds   = load_dataset("Lichess/chess-openings", split="train")
         rows = list(ds)
     except Exception as e:
         print(f"[stage 0] Could not load dataset: {e}")
@@ -853,7 +853,7 @@ def pretrain_on_puzzles(agent, save_path=None,
     try:
         from datasets import load_dataset
         print("[stage 1] Loading chess-puzzles dataset (streaming) …")
-        ds = load_dataset("Lichess/chess-puzzles", split="train", streaming=True, num_proc=8)
+        ds = load_dataset("Lichess/chess-puzzles", split="train", streaming=True)
     except Exception as e:
         print(f"[stage 1] Could not load dataset: {e}")
         return
